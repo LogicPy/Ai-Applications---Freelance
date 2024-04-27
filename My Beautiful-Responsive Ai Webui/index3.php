@@ -982,24 +982,12 @@ function fetchSessionData(sessionId) {
     .catch(error => console.error('Error loading the session:', error));
 }
 
-document.getElementById('send-button').addEventListener('click', function() {
-    const promptText = document.getElementById('message-input').value;
-    fetch('/generate-text', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ prompt: promptText })
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('response').innerText = data.choices[0].text;
-    })
-    .catch(error => console.error('Error:', error));
-});
 
-const express = require('express');
-const axios = require('axios');
+import express from 'express';
+import axios from 'axios';
+
+//const express = require('express');
+//const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -1027,6 +1015,36 @@ const port = 3000;
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
+
+document.getElementById('send-button').addEventListener('click', function() {
+    const promptText = document.getElementById('message-input').value;
+    fetch('/generate-text', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt: promptText })
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('message-container').innerText = data.choices[0].text;
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+function appendMessage(text, sender = 'user') {
+    const messageContainer = document.getElementById('message-container');
+
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message');
+    messageDiv.classList.add(sender === 'user' ? 'user-message' : 'ai-message');
+    messageDiv.textContent = text;
+    messageContainer.appendChild(messageDiv);
+
+    // Scroll to the bottom of the message container
+    messageContainer.scrollTop = messageContainer.scrollHeight;
+}
+
 
 </script>
 
