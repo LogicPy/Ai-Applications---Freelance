@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat with Groq</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Zain:wght@200;300;400;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; margin: 0; }
+        .sidebar { 
+            width: 250px; 
+            height: 100vh; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            background-color: #f7f7f7; 
+            border-right: 1px solid #ddd; 
+            padding: 20px; 
+            overflow-y: auto; 
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1); 
+            transform: translateX(-100%); 
+            transition: transform 0.3s ease; 
+        }
+        .sidebar.show { transform: translateX(0); }
+        .sidebar h2 { margin-top: 0; }
+        .sidebar ul { list-style-type: none; padding: 0; }
+        .sidebar ul li { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .sidebar ul li a { text-decoration: none; color: #333; }
+        .chat-container { 
+            flex-grow: 1; 
+            margin-left: 0; 
+            transition: margin-left 0.3s ease; 
+            padding-left: 20px; /* Add padding for space between sidebar and content */
+        }
+        .chat-container.collapsed { margin-left: 250px; }
+        .chat-header { padding: 10px; background-color: #f1f1f1; border-bottom: 1px solid #ddd; }
+        .chat-messages { max-height: calc(100vh - 140px); overflow-y: auto; border: 1px solid #ddd; padding: 10px; width: 100%; }
+        .chat-message { padding: 5px 10px; border-bottom: 1px solid #eee; }
+        .chat-input { width: calc(100% - 20px); padding: 10px; margin: 10px 0; }
+        .chat-button { padding: 10px 20px; margin-top: 10px; }
+        .chat-button:disabled { background-color: #ccc; }
+        .model-selector { margin-bottom: 10px; }
+        .model-selector label { margin-right: 10px; }
+
+.HeadStyle
+{
+  font-family: "Zain", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+}
+    </style>
+</head>
+<body>
+
+<div id="sidebar" class="sidebar">
+    <h2>Sessions</h2>
+    <ul>
+        <li><a href="#">Session 1</a></li>
+        
+        <!-- Add more sessions as needed -->
+    </ul>
+</div>
+
+<div id="chat-container" class="chat-container">
+    <div class="chat-header">
+        <button onclick="toggleSidebar()">☰</button>
+        <h2 class="HeadStyle">Ollama to Groq Ui by Wayne.cool</h2>
+    </div>
+    <div class="model-selector">
+        <label for="model-select">Select Model:</label>
+        <select id="model-select">
+            <option value="llama3-8b-8192">llama3-8b-8192</option>
+			<option value="gemma-7b-it">gemma-7b-it</option>
+            <!-- Add more models as needed -->
+        </select>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <textarea class="chat-input" id="chat-input" placeholder="Type your message..."></textarea>
+    <button class="chat-button" id="chat-submit" disabled>Send</button>
+</div>
+
+<script>
+    let messages = [];
+    let autoScroll = true;
+    let selectedModel = "llama3-8b-8192";
+    const GROQ_API_BASE_URL = "https://api.groq.com/openai/v1/chat/completions"; // Replace with the actual Groq API base URL
+    const API_KEY = "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"; // Replace with your actual API key
+
+    // DOM elements
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput = document.getElementById('chat-input');
+    const chatSubmit = document.getElementById('chat-submit');
+    const modelSelect = document.getElementById('model-select');
+    const sidebar = document.getElementById('sidebar');
+    const chatContainer = document.getElementById('chat-container');
+
+    // Function to handle sending messages
+    function sendMessage(message) {
+        messages.push({ role: 'user', content: message });
+        updateChatUI();
+        getGroqResponse(message);
+    }
+
+    // Function to get response from Groq API
+    async function getGroqResponse(userPrompt) {
+        const responseMessage = {
+            role: 'assistant',
+            content: '',
+            done: false,
+        };
+
+        messages.push(responseMessage);
+        updateChatUI();
+
+        try {
+            const response = await fetch(`${GROQ_API_BASE_URL}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: selectedModel,
+                    messages: messages.map(msg => ({
+                        role: msg.role,
+                        content: msg.content
+                    })),
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                responseMessage.content = data.choices[0].message.content;
+                responseMessage.done = true;
+                updateChatUI();
+            } else {
+                throw new Error("Failed to fetch response");
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            responseMessage.content = "Error fetching response";
+            responseMessage.done = true;
+            updateChatUI();
+        }
+    }
+
+    // Function to update the chat UI
+ // Function to update the chat UI
+	function updateChatUI() {
+		chatMessages.innerHTML = messages.map(msg => `
+			<div class="chat-message">
+				<strong>${msg.role === 'user' ? 'You' : selectedModel}:</strong>
+				<p>${msg.content}</p>
+			</div>
+		`).join('');
+
+		if (autoScroll) {
+			chatMessages.scrollTop = chatMessages.scrollHeight;
+		}
+
+		chatInput.value = '';
+		chatSubmit.disabled = true;
+	}
+
+
+    // Event listeners for input and button
+    chatInput.addEventListener('input', () => {
+        chatSubmit.disabled = chatInput.value.trim() === '';
+    });
+
+    chatSubmit.addEventListener('click', () => {
+        const message = chatInput.value.trim();
+        if (message) {
+            sendMessage(message);
+        }
+    });
+
+    chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatSubmit.click();
+        }
+    });
+
+    modelSelect.addEventListener('change', (e) => {
+        selectedModel = e.target.value;
+    });
+
+    // Function to toggle the sidebar
+    function toggleSidebar() {
+        sidebar.classList.toggle('show');
+        chatContainer.classList.toggle('collapsed');
+    }
+
+    // Initialize the chat UI
+    updateChatUI();
+</script>
+
+</body>
+</html>
