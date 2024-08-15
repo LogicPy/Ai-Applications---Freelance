@@ -1,6 +1,7 @@
+
 from flask import Flask, request, jsonify, render_template
-import os
 import requests
+import os
 
 app = Flask(__name__)
 
@@ -9,8 +10,9 @@ os.environ['GROQ_API_KEY'] = 'GROQ_API_KEY'
 api_key = os.environ.get('GROQ_API_KEY')
 groq_api_url = "https://api.groq.com/openai/v1/chat/completions"
 
-# Variable to store the last message
-last_message = None
+# Circular buffer to store the last four messages
+message_history = [None] * 4
+message_index = 0
 
 @app.route('/')
 def home():
@@ -18,26 +20,27 @@ def home():
 
 @app.route('/groq', methods=['POST'])
 def converse_with_groq():
-    global last_message
-    data = request.get_json()
+    global message_history, message_index
+    data = request.get_json(force=True)  # Added force=True to ensure JSON parsing
     user_message = data.get('message')
-    model = data.get('model', 'llama3-8b-8192')  # Default to 'llama3-8b-8192' if no model specified.
+    model = data.get('model', 'llama3-8b-8192')  # Default to 'llama3-8b-8192' if no model is specified.
 
     if not user_message:
         return jsonify({"error": "No message provided"}), 400
 
     try:
         groq_response = get_groq_response(user_message, model)
-        last_message = user_message  # Update the last message
+        # Update the circular buffer
+        message_history[message_index] = user_message
+        message_index = (message_index + 1) % 4  # Ensure the index wraps around
         return jsonify({"response": groq_response})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 def get_groq_response(message, model):
-    global last_message
-    messages = [{"role": "user", "content": message}]
-    if last_message is not None:
-        messages.insert(0, {"role": "user", "content": last_message})
+    # Prepare the message history for the API call
+    messages = [{"role": "user", "content": msg} for msg in message_history if msg is not None]
+    messages.append({"role": "user", "content": message})  # Add current message last
 
     payload = {
         "messages": messages,
