@@ -1,5 +1,6 @@
 @echo off
 REM XTTS Launcher
+REM Created by: Deffcolony
 REM Edited by: Wayne.cool
 REM
 REM This script is intended for use on Windows systems.
