@@ -18,8 +18,32 @@ import smtplib
 from email.mime.text import MIMEText
 import spacy
 import json
+from flask_sqlalchemy import SQLAlchemy
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
-nlp = spacy.load('en_core_web_sm')
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///temp_mem.db'  # Change as per your database
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.String(255), nullable=False)
+    event_time = db.Column(db.DateTime, nullable=False)
+    created_time = db.Column(db.DateTime, default=datetime.utcnow)
+    recurrence = db.Column(db.String(50))
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Message {self.content}>'
 
 # In-memory storage for user contexts
 # Dictionary to store user context
@@ -32,6 +56,43 @@ app = Flask(__name__)
 
 scheduled_events_lock = Lock()
 user_context_lock = Lock()
+
+import requests
+import json
+
+import requests
+
+def add_event_to_flask(user_id, description, event_time, recurrence=None):
+    url = 'http://localhost:5000/api/add_event'  # Your Flask API endpoint
+    payload = {
+        'user_id': user_id,
+        'description': description,
+        'event_time': event_time.isoformat(),
+        'recurrence': recurrence
+    }
+    
+    try:
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            print('Event successfully sent to Flask dashboard')
+        else:
+            print(f"Failed to send event: {response.status_code}")
+    except Exception as e:
+        print(f"Error sending event to Flask: {e}")
+
+# When you schedule an event in your AI script, add this line after scheduling:
+# add_event_to_flask(user_id, event_description, event_time)
+
+
+def get_messages_from_flask(user_id):
+    url = f'http://localhost:5000/api/get_messages/{user_id}'
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        for message in data['messages']:
+            print(f"Message: {message['content']}, Timestamp: {message['timestamp']}")
+    else:
+        print('Failed to fetch messages')
 
 
 def save_scheduled_events():
@@ -63,6 +124,16 @@ def load_scheduled_events():
 
 # Load events at startup
 load_scheduled_events()
+
+def add_event_to_db(user_id, description, event_time, recurrence=None):
+    new_event = Event(user_id=user_id, description=description, event_time=event_time, recurrence=recurrence)
+    db.session.add(new_event)
+    db.session.commit()
+    print(f"Event added: {new_event}")
+
+def get_user_events(user_id):
+    return Event.query.filter_by(user_id=user_id).all()
+
 
 # Save events after adding/removing
 def add_event(event):
@@ -157,7 +228,7 @@ def extract_event_details(prompt):
     doc = nlp(event_text)
     event_time = None
     time_expression = ""
-
+    
     for ent in doc.ents:
         if ent.label_ in ["TIME", "DATE"]:
             time_expression = ent.text
@@ -222,7 +293,18 @@ def generate(user_id: str, prompt: str):
                 scheduled_events.append(event)
                 print(f"Scheduled events: {scheduled_events}")  # Debug statement
 
+            # Immediately add event to Flask server/database
+            try:
+                add_event_to_flask(user_id, event_description, event_time)
+            except Exception as e:
+                print(f"Failed to send event to Flask: {e}")
+
+            # Send confirmation back to AI
             confirmation_message = f"Got it! I'll remind you to {event_description} at {event_time.strftime('%Y-%m-%d %H:%M')}."
+            
+            # Log the memory of scheduling a task
+            log_memory(user_id, f"Scheduled event: {event_description} at {event_time.strftime('%Y-%m-%d %H:%M')}", category="personal_task")
+            
             ai_message = {
                 "timestamp": datetime.now(),
                 "role": "assistant",
@@ -245,7 +327,7 @@ def generate(user_id: str, prompt: str):
             print(f"\nAI: {error_message}")
             return
 
-    # Existing code for handling regular user messages
+    # Handle general (non-scheduling) user messages
     user_message = {
         "timestamp": datetime.now(),
         "role": "user",
@@ -287,8 +369,14 @@ def generate(user_id: str, prompt: str):
 
     # Send a request to the AI server
     try:
+        print(f"Sending request to AI server with payload: {payload}")  # Debugging the payload
         response = requests.post(api_url, json=payload, headers=headers)
+        print(f"Response status code: {response.status_code}")  # Debugging response status
+
         response.raise_for_status()
+
+        # Debugging response content
+        print(f"Raw response from AI server: {response.text}")
 
         # Process each line of the response
         combined_response = ""
@@ -300,10 +388,14 @@ def generate(user_id: str, prompt: str):
                     combined_response += data['response']
                 elif 'message' in data and 'content' in data['message']:
                     combined_response += data['message']['content']
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                print(f"Error parsing response: {e}")
                 continue
 
         ai_content = combined_response.strip()
+
+        # Log the memory of the AI response
+        log_memory(user_id, f"AI responded to: {prompt} with: {ai_content}", category="conversation")
 
         # Add the AI's response to the user's memory
         ai_message = {
@@ -314,9 +406,31 @@ def generate(user_id: str, prompt: str):
         with user_context_lock:
             user_context[user_id].append(ai_message)
 
-        print('\nAI: ' + ai_content)
+        print('\nAI: ' + ai_content)  # Debugging final AI response
     except requests.exceptions.RequestException as e:
         print(f"Error: {e}")
+
+
+def log_memory(user_id: str, prompt: str, category: str = "general"):
+    # Paraphrase the memory, for example based on certain key phrases or general structure
+    paraphrased_memory = f"Memory created: {prompt}"
+
+    # Create a new memory entry in the database via Flask API
+    url = 'http://localhost:5000/api/add_memory'
+    payload = {
+        'user_id': user_id,
+        'description': paraphrased_memory,
+        'category': category
+    }
+    
+    try:
+        response = requests.post(url, json=payload)
+        if response.status_code == 200:
+            print('Memory successfully logged')
+        else:
+            print(f"Failed to log memory: {response.status_code}")
+    except Exception as e:
+        print(f"Error logging memory: {e}")
 
 
 def send_reminder(event):
@@ -351,14 +465,21 @@ def extract_event_details(prompt):
         event_description = parts[0].strip().rstrip('.,;:!?')
         time_expression = parts[1].strip().rstrip('.,;:!?')
         # Parse the time expression
-        if 'minute' in time_expression:
-            number = int(''.join(filter(str.isdigit, time_expression)))
-            event_time = datetime.now() + timedelta(minutes=number)
-        elif 'hour' in time_expression:
-            number = int(''.join(filter(str.isdigit, time_expression)))
-            event_time = datetime.now() + timedelta(hours=number)
+        if 'minute' in time_expression or 'hour' in time_expression:
+            number_str = ''.join(filter(str.isdigit, time_expression))
+            
+            # Check if the number_str is not empty
+            if number_str:
+                number = int(number_str)
+                if 'minute' in time_expression:
+                    event_time = datetime.now() + timedelta(minutes=number)
+                elif 'hour' in time_expression:
+                    event_time = datetime.now() + timedelta(hours=number)
+            else:
+                raise ValueError(f"Could not extract a valid time from expression: {time_expression}")
         else:
-            event_time = None
+            event_time = None  # or handle it as needed
+
     else:
         # Use search_dates to find date/time expressions
         search_result = dateparser.search.search_dates(
@@ -380,6 +501,8 @@ def extract_event_details(prompt):
             event_time = None
 
     return event_description, event_time
+
+
 
 
 if __name__ == "__main__":
