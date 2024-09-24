@@ -1,6 +1,4 @@
 ![TempMem Logo](images/tempmem-logo.png)
-![Alt text for the image](https://i.imgur.com/zoNadZ1.png)
-
 
 # TempMem AI Framework
 
