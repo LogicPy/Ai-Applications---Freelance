@@ -1,5 +1,73 @@
 ![TempMem Logo](images/tempmem-logo.png)
 
+# initial instructions for database creation
+
+```
+# TempMem Framework - Initial Setup Guide
+
+This guide will walk you through the steps to set up and initialize the TempMem framework, including installing dependencies and preparing the database using Flask.
+
+## 1. Install Dependencies
+
+Ensure you have Python installed, and then install the required dependencies by running:
+
+```bash
+pip install -r requirements.txt
+```
+
+## 2. Set Up Flask Application
+
+Set the `FLASK_APP` environment variable in your project directory:
+
+```bash
+export FLASK_APP=app.py
+```
+
+## 3. Initialize the Database
+
+Initialize the SQLite database, which creates the necessary migration directory.
+
+```bash
+flask db init
+```
+
+## 4. Create Migrations
+
+Generate migrations based on your data models:
+
+```bash
+flask db migrate -m "Initial migration"
+```
+
+## 5. Apply Migrations
+
+Apply the migrations to create the necessary tables in your database:
+
+```bash
+flask db upgrade
+```
+
+This will create tables such as `Event` and `Memory` in the SQLite database.
+
+## 6. Run the Application
+
+Start the Flask application by running:
+
+```bash
+python app.py
+```
+
+## 7. Optional: View Your Data
+
+If you'd like to view your SQLite database, you can use tools such as [DB Browser for SQLite](https://sqlitebrowser.org/).
+
+---
+
+Once these steps are complete, your TempMem framework will be ready to use, and you can begin interacting with it through the web interface and Flask-powered backend.
+
+```
+
+
 # TempMem AI Framework
 
 **TempMem** is an advanced AI framework designed to emulate temporal memory and spatial awareness. Built on Flask and the Ollama framework, TempMem offers AI the ability to recall events with a precise awareness of time, making it a highly versatile and efficient memory system.
