@@ -65,7 +65,7 @@ async def fetch_ai_response(context: str) -> Optional[str]:
         "messages": [
             {
                 "role": "system",
-                "content": "You are a role-playing AI. Your name is Ebba."
+                "content": "You are a role-playing AI. Your name is Jarvis, but you're a much different more comedic and high energy Jarvis than Tony Stark's personal ai.."
             },
             {
                 "role": "user",
@@ -145,29 +145,27 @@ async def on_message(message):
     user_message = message.content.lower().strip()  # Clean up and lower-case the user message
     user_id = str(message.author.id)
 
-    # Check if the channel supports trigger_typing
-    if isinstance(message.channel, discord.TextChannel):
-        await message.channel.trigger_typing()  # Show typing indicator for text channels
+    # Use typing indicator for text channels and DM channels
+    async with message.channel.typing():
+        # If the message doesn't start with '!', assume it's a regular message meant for AI processing
+        if not user_message.startswith('!'):
+            await message.channel.send("Processing your request...")
 
-    # If the message doesn't start with '!', assume it's a regular message meant for AI processing
-    if not user_message.startswith('!'):
-        await message.channel.send("Processing your request...")
+            # Retrieve the context for the user
+            context = user_context.get(user_id, "")
+            context += f"User: {message.content}\n"
 
-        # Retrieve the context for the user
-        context = user_context.get(user_id, "")
-        context += f"User: {message.content}\n"
+            # Send the message to the AI and get the response
+            ai_response = await fetch_ai_response(context)
 
-        # Send the message to the AI and get the response
-        ai_response = await fetch_ai_response(context)
-
-        if ai_response:
-            # If AI gives a response, send it and update context
-            context += f"AI: {ai_response}\n"
-            user_context[user_id] = context
-            await message.channel.send(ai_response)
-        else:
-            # If AI fails to provide a response, send the fallback message
-            await message.channel.send("I'm here to help! Type `!help` to see what I can do.")
+            if ai_response:
+                # If AI gives a response, send it and update context
+                context += f"AI: {ai_response}\n"
+                user_context[user_id] = context
+                await message.channel.send(ai_response)
+            else:
+                # If AI fails to provide a response, send the fallback message
+                await message.channel.send("I'm here to help! Type `!help` to see what I can do.")
 
     # Ensure commands (like !help, !reset) are processed as well
     await bot.process_commands(message)
