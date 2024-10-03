@@ -1,0 +1,183 @@
+<!-- templates/index.html -->
+
+<style>
+/* frontend/styles.css */
+
+/* Reset some default styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header Styling */
+header {
+    background-color: #4CAF50;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Main Content Styling */
+main {
+    flex: 1;
+    display: flex;
+    padding: 20px;
+}
+
+.interviewer-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.interviewer-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+}
+
+.conversation-section {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 20px;
+}
+
+.dialogue-box {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    min-height: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    white-space: pre-wrap; /* Preserve line breaks */
+}
+
+.user-response {
+    display: flex;
+}
+
+#user-input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #4CAF50;
+    border-radius: 5px 0 0 5px;
+    outline: none;
+}
+
+#send-button {
+    padding: 10px 20px;
+    border: 2px solid #4CAF50;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#send-button:hover {
+    background-color: #45a049;
+}
+
+.user-text {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+/* Blinking Cursor */
+.blinking-cursor {
+    border-right: 2px solid;
+    animation: blink 0.7s steps(1) infinite;
+}
+
+@keyframes blink {
+    0%, 50% { border-color: transparent; }
+    51%, 100% { border-color: black; }
+}
+
+/* Footer Styling */
+footer {
+    background-color: #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+/* Audio Controls Styling */
+.audio-controls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+}
+
+.audio-controls label {
+    margin-right: 10px;
+}
+
+</style>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Interview Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <h1>Job Interview Simulator</h1>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <div class="interviewer-section">
+            <img src="{{ url_for('static', filename='assets/images/interviewer.png') }}" alt="Interviewer" class="interviewer-image">
+        </div>
+        <div class="conversation-section">
+            <div id="dialogue-box" class="dialogue-box">
+                <!-- Self-typing text will appear here -->
+            </div>
+            <div class="user-response">
+                <input type="text" id="user-input" placeholder="Type your answer here...">
+                <button id="send-button">Send</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <!-- Navigation buttons or additional info -->
+    </footer>
+
+    <!-- Audio Elements -->
+    <audio id="typing-sound" src="{{ url_for('static', filename='assets/audio/typing.mp3') }}" preload="auto"></audio>
+    <audio id="send-sound" src="{{ url_for('static', filename='assets/audio/send.mp3') }}" preload="auto"></audio>
+
+    <!-- Audio Controls -->
+    <div class="audio-controls">
+        <label for="volume-slider">Volume:</label>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
