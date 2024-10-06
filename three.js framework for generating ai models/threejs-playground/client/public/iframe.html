@@ -1,0 +1,148 @@
+<!-- public/iframe.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Three.js Sandbox</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #error-log {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background-color: rgba(255, 0, 0, 0.8);
+      color: #fff;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+      z-index: 1;
+      max-width: 90%;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div id="error-log"></div>
+  
+  <!-- Load Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  
+  <!-- Load OrbitControls from JSDelivr -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
+  
+  <script>
+    // Initialize Three.js
+    window.scene = new THREE.Scene();
+    window.scene.background = new THREE.Color(0xeeeeee); // Light background for contrast
+    
+    // Set up camera
+    window.camera = new THREE.PerspectiveCamera(
+      75,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000
+    );
+    window.camera.position.set(0, 0, 5); // Position the camera
+    
+    // Initialize renderer
+    window.renderer = new THREE.WebGLRenderer({ antialias: true });
+    window.renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(window.renderer.domElement);
+    
+    // Initialize OrbitControls
+    window.controls = new THREE.OrbitControls(window.camera, window.renderer.domElement);
+    window.controls.enableDamping = true;
+    window.controls.dampingFactor = 0.05;
+    window.controls.screenSpacePanning = false;
+    window.controls.minDistance = 1;
+    window.controls.maxDistance = 1000;
+    
+    // Add grid and axes helpers
+    const gridHelper = new THREE.GridHelper(10, 10);
+    window.scene.add(gridHelper);
+    
+    const axesHelper = new THREE.AxesHelper(5);
+    window.scene.add(axesHelper);
+    
+    // Animation loop
+    function animate() {
+      requestAnimationFrame(animate);
+      window.controls.update();
+      window.renderer.render(window.scene, window.camera);
+    }
+    animate();
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      window.renderer.setSize(width, height);
+      window.camera.aspect = width / height;
+      window.camera.updateProjectionMatrix();
+    });
+    
+    // Error log element
+    const errorLog = document.getElementById('error-log');
+    
+    // Listen for messages from the parent React app
+    window.addEventListener('message', (event) => {
+      // For development purposes, log the origin
+      console.log('Message Origin:', event.origin);
+      
+      // Security Check: Adjust as per your development environment
+      // If using 'allow-same-origin', event.origin should match the parent origin
+      // Otherwise, if 'allow-same-origin' is not set, event.origin will be 'null'
+      // Modify the condition based on your setup
+      // For now, we'll allow all origins for testing purposes
+      // **Note:** Remove or tighten this in production
+      // if (event.origin !== 'http://localhost:3000' && event.origin !== 'null') return;
+      
+      if (event.data.type === 'executeCode') {
+        console.log('Received code:', event.data.code);
+        try {
+          // Execute the submitted code
+          eval(event.data.code);
+          console.log('Code executed successfully.');
+          errorLog.style.display = 'none'; // Hide error log on success
+          event.source.postMessage({ type: 'codeExecution', status: 'success' }, event.origin);
+        } catch (error) {
+          console.error('Error executing code:', error.message);
+          errorLog.textContent = `Error: ${error.message}`;
+          errorLog.style.display = 'block';
+          event.source.postMessage({ type: 'codeExecution', status: 'error', error: error.message }, event.origin);
+        }
+      }
+    });
+    
+    // Optional: Function to clear the scene before adding new objects
+    function clearScene() {
+      // Remove all meshes from the scene
+      window.scene.traverse((object) => {
+        if (object.isMesh) {
+          object.geometry.dispose();
+          if (object.material.isMaterial) {
+            cleanMaterial(object.material);
+          } else {
+            // an array of materials
+            for (const material of object.material) cleanMaterial(material);
+          }
+          window.scene.remove(object);
+        }
+      });
+      console.log('Scene cleared.');
+    }
+    
+    function cleanMaterial(material) {
+      material.dispose();
+      
+      // Dispose textures
+      for (const key in material) {
+        const value = material[key];
+        if (value && typeof value === 'object' && 'minFilter' in value) {
+          value.dispose();
+        }
+      }
+    }
+  </script>
+</body>
+</html>

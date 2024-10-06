@@ -1,0 +1,42 @@
+/* Reset some basic styles */
+body, html, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* Parent container using Flexbox */
+.app-container {
+  display: flex;
+  flex-direction: row; /* Change to column if you prefer vertical stacking */
+  height: 100vh; /* Full viewport height */
+  width: 100vw; /* Full viewport width */
+}
+
+/* Three.js viewport styling */
+.three-scene {
+  flex: 3; /* Takes up 75% of the space */
+  position: relative;
+}
+
+/* Form styling */
+.form-component {
+  flex: 1; /* Takes up 25% of the space */
+  padding: 20px;
+  box-sizing: border-box;
+  background-color: #f5f5f5; /* Light background for contrast */
+  overflow-y: auto; /* Scroll if content exceeds height */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .three-scene, .form-component {
+    flex: none;
+    height: 50vh; /* Each takes up half the viewport height */
+    width: 100%;
+  }
+}

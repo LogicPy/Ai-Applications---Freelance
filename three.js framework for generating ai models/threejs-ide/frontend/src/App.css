@@ -1,0 +1,123 @@
+/* frontend/src/App.css */
+
+@import 'prismjs/themes/prism.css';
+
+/* frontend/src/App.css */
+
+
+.navigation-controls
+{
+	display: none;
+}
+
+.App {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.App-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+}
+/* frontend/src/App.css */
+
+main {
+  display: block; /* Default for larger screens */
+  width: 100%; 
+  height: auto; /* Allow height to grow */
+}
+
+/* Detecting portrait mode on smartphones */
+@media screen and (max-device-width: 768px) and (orientation: portrait) {
+  main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    height: auto;
+  }
+}
+
+
+main {
+  flex: 1;
+  display: block;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start; /* Ensure content starts at the top */
+  background-color: #f0f0f0;
+  overflow-y: auto;
+  width: 100%; /* Take the full width */
+  max-height: 80vh; /* Adjust height so it's not too large */
+}
+
+/* Ensure pre element for code block displays properly */
+pre.code-container {
+  background-color: #2d2d2d;
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  width: 100%; /* Ensure it's wide enough */
+  max-width: 100%;
+  overflow-x: auto;
+  margin-top: 20px;
+  margin-bottom: 20px; /* Add space at the bottom */
+  max-height: 30vh; /* Limit the height */
+  overflow-y: auto; /* Add vertical scrolling if needed */
+}
+
+code.language-javascript {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 14px;
+  white-space: pre-wrap; /* Ensure code wraps properly */
+}
+
+textarea {
+  width: 80%;
+  max-width: 600px;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  background-color: #61dafb;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #21a1f1;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}
+
+/* Styling for the code display */
+pre {
+  background: #2d2d2d;
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  width: 80%;
+  max-width: 800px;
+  overflow-x: auto;
+  margin-top: 20px;
+}
+
+code {
+  font-family: 'Source Code Pro', monospace;
+  font-size: 14px;
+}

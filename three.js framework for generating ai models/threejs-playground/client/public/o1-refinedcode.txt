@@ -1,0 +1,347 @@
+// Enter your Three.js code here
+
+// Initialize grid and score globally
+const GRID_WIDTH = 10;
+const GRID_HEIGHT = 20;
+const CELL_SIZE = 1;
+
+// Define tetromino spawn Y position (adjusted to center the falling blocks)
+const TETROMINO_SPAWN_Y = 10; // Lowered from GRID_HEIGHT to position blocks closer to the camera
+
+window.grid = Array.from({ length: GRID_HEIGHT }, () => Array(GRID_WIDTH).fill(null));
+window.score = 0;
+
+// Initialize tetrominoes array globally
+window.tetrominoes = [];
+
+// Create a floor plane
+const floorGeometry = new THREE.PlaneGeometry(GRID_WIDTH * CELL_SIZE, GRID_WIDTH * CELL_SIZE);
+const floorMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
+const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2;
+floor.position.y = -0.5; // Align with grid
+floor.receiveShadow = true;
+scene.add(floor);
+
+// Add grid helper for visualization
+const gridHelper = new THREE.GridHelper(GRID_WIDTH * CELL_SIZE, GRID_WIDTH, 0x000000, 0x000000);
+gridHelper.rotation.x = -Math.PI / 2;
+scene.add(gridHelper);
+
+// Add axes helper
+const axesHelper = new THREE.AxesHelper(5);
+scene.add(axesHelper);
+
+// Add lighting
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+directionalLight.position.set(0, 50, 50);
+directionalLight.castShadow = true;
+directionalLight.shadow.mapSize.width = 1024;
+directionalLight.shadow.mapSize.height = 1024;
+scene.add(directionalLight);
+
+// Define the shapes and their colors
+const shapes = [
+  { 
+    name: 'Cube', 
+    geometry: new THREE.BoxGeometry(1, 1, 1), 
+    color: 0xff0000, // Red
+    cells: [
+      [0,0,0],
+      [1,0,0],
+      [0,1,0],
+      [1,1,0],
+    ] // 2x2 Cube
+  },
+  { 
+    name: 'Long', 
+    geometry: new THREE.BoxGeometry(1, 1, 1), 
+    color: 0x00ff00, // Green
+    cells: [
+      [0,0,0],
+      [0,1,0],
+      [0,2,0],
+      [0,3,0],
+    ] // 4x1 Line
+  },
+  { 
+    name: 'L-Shape', 
+    geometry: new THREE.BoxGeometry(1, 1, 1), 
+    color: 0x0000ff, // Blue
+    cells: [
+      [0,0,0],
+      [0,1,0],
+      [0,2,0],
+      [1,2,0],
+    ] // L-shape
+  },
+  { 
+    name: 'T-Shape', 
+    geometry: new THREE.BoxGeometry(1, 1, 1), 
+    color: 0xffff00, // Yellow
+    cells: [
+      [0,1,0],
+      [1,0,0],
+      [1,1,0],
+      [2,1,0],
+    ] // T-shape
+  },
+  { 
+    name: 'S-Shape', 
+    geometry: new THREE.BoxGeometry(1, 1, 1), 
+    color: 0xff00ff, // Magenta
+    cells: [
+      [0,1,0],
+      [1,1,0],
+      [1,0,0],
+      [2,0,0],
+    ] // S-shape
+  },
+  // Add more shapes as needed
+];
+
+// Function to create a new tetromino
+function createTetromino() {
+  const shape = shapes[Math.floor(Math.random() * shapes.length)];
+  const tetromino = new THREE.Group(); // Using Group to handle multiple cells
+  
+  shape.cells.forEach(cell => {
+    const [x, y, z] = cell;
+    const blockGeometry = new THREE.BoxGeometry(CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    const blockMaterial = new THREE.MeshStandardMaterial({ color: shape.color });
+    const block = new THREE.Mesh(blockGeometry, blockMaterial);
+    block.position.set(x * CELL_SIZE, y * CELL_SIZE, z * CELL_SIZE);
+    block.castShadow = true;
+    block.receiveShadow = true;
+    tetromino.add(block);
+  });
+
+  // Position the tetromino at the top center of the grid (adjusted Y position)
+  tetromino.position.set((GRID_WIDTH / 2 - 1) * CELL_SIZE, TETROMINO_SPAWN_Y, 0);
+  
+  // Check for collision immediately after spawning
+  if (isCollision(tetromino, { x: 0, y: 0 })) {
+    // Game Over
+    console.log('Game Over!');
+    // Communicate Game Over to parent React app
+    window.parent.postMessage({ type: 'gameOver' }, '*');
+    // Stop creating new tetrominoes
+    clearInterval(tetrominoInterval);
+  } else {
+    scene.add(tetromino);
+    window.tetrominoes.push(tetromino);
+  }
+}
+
+// Function to check collision for a tetromino at a given movement
+function isCollision(tetromino, movement) {
+  for (let i = 0; i < tetromino.children.length; i++) {
+    const child = tetromino.children[i];
+    const x = Math.round(child.position.x / CELL_SIZE + movement.x / CELL_SIZE + tetromino.position.x / CELL_SIZE);
+    const y = Math.round(child.position.y / CELL_SIZE + movement.y / CELL_SIZE + tetromino.position.y / CELL_SIZE);
+
+    // Check boundaries
+    if (x < 0 || x >= GRID_WIDTH || y < 0) {
+      return true;
+    }
+
+    // Check if the cell is already occupied
+    if (y < GRID_HEIGHT && window.grid[y][x] !== null) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Function to lock tetrominoes into the grid
+function lockTetromino(tetromino) {
+  tetromino.children.forEach(child => {
+    const x = Math.round(child.position.x / CELL_SIZE + tetromino.position.x / CELL_SIZE);
+    const y = Math.round(child.position.y / CELL_SIZE + tetromino.position.y / CELL_SIZE);
+    if (y >= 0 && y < GRID_HEIGHT && x >= 0 && x < GRID_WIDTH) {
+      window.grid[y][x] = child.material.color.getHex();
+    }
+  });
+  // Remove the tetromino from the scene and tetrominoes array
+  scene.remove(tetromino);
+  const index = window.tetrominoes.indexOf(tetromino);
+  if (index > -1) {
+    window.tetrominoes.splice(index, 1);
+  }
+}
+
+// Function to check and clear complete lines
+function clearLines() {
+  let linesCleared = 0;
+  for (let y = 0; y < GRID_HEIGHT; y++) {
+    let isLineComplete = true;
+    for (let x = 0; x < GRID_WIDTH; x++) {
+      if (window.grid[y][x] === null) {
+        isLineComplete = false;
+        break;
+      }
+    }
+
+    if (isLineComplete) {
+      linesCleared++;
+      // Remove the line from the grid
+      window.grid.splice(y, 1);
+      // Add a new empty line at the top
+      window.grid.unshift(Array(GRID_WIDTH).fill(null));
+
+      // Update the positions of existing blocks in the scene
+      scene.traverse(child => {
+        if (child.isMesh && child.position.y / CELL_SIZE > y) {
+          child.position.y -= CELL_SIZE;
+        }
+      });
+    }
+  }
+
+  if (linesCleared > 0) {
+    // Update score based on lines cleared
+    window.score += linesCleared * 100; // Example: 100 points per line
+    console.log('Score:', window.score);
+    // Communicate score update to parent React app
+    window.parent.postMessage({ type: 'scoreUpdate', score: window.score }, '*');
+  }
+}
+
+// Function to update and move the tetrominoes
+function updateTetrominoes() {
+  window.tetrominoes.forEach(tetromino => {
+    // Calculate the new position
+    const movement = { x: 0, y: -0.1 }; // Falling speed
+
+    // Check for collision at the new position
+    if (isCollision(tetromino, movement)) {
+      // Lock the tetromino into the grid
+      lockTetromino(tetromino);
+      // Check and clear complete lines
+      clearLines();
+    } else {
+      // Move the tetromino down
+      tetromino.position.y -= movement.y;
+    }
+  });
+}
+
+// Function to handle key events for rotation and movement
+function handleKeyDown(event) {
+  if (window.tetrominoes.length === 0) return; // No active tetrominoes to control
+
+  const tetromino = window.tetrominoes[window.tetrominoes.length - 1]; // Control the latest tetromino
+
+  if (event.key === 'ArrowLeft') { // Move left
+    const movement = { x: -1, y: 0 };
+    if (!isCollision(tetromino, movement)) {
+      tetromino.position.x += movement.x * CELL_SIZE;
+    }
+  } else if (event.key === 'ArrowRight') { // Move right
+    const movement = { x: 1, y: 0 };
+    if (!isCollision(tetromino, movement)) {
+      tetromino.position.x += movement.x * CELL_SIZE;
+    }
+  } else if (event.key === 'ArrowDown') { // Move down faster
+    const movement = { x: 0, y: -1 };
+    if (!isCollision(tetromino, movement)) {
+      tetromino.position.y += movement.y * CELL_SIZE;
+    }
+  } else if (event.key === 'ArrowUp') { // Rotate
+    tetromino.rotation.z += Math.PI / 2; // Rotate 90 degrees
+    if (isCollision(tetromino, { x: 0, y: 0 })) {
+      tetromino.rotation.z -= Math.PI / 2; // Revert if collision detected
+    }
+  }
+}
+
+// Add event listener for keydown
+document.addEventListener('keydown', handleKeyDown);
+
+// Create a new tetromino every second
+const tetrominoInterval = setInterval(createTetromino, 1000);
+
+// Adjust camera position to lower height
+window.camera.position.set(0, 15, 15); // Lowered Y from 25 to 15, Z from 25 to 15 for closer view
+window.camera.lookAt(0, 0, 0);
+
+// Animate the scene
+function animate() {
+  requestAnimationFrame(animate);
+  updateTetrominoes();
+  window.controls.update(); // Required if enableDamping is true
+  window.renderer.render(window.scene, window.camera);
+}
+animate();
+
+// Handle window resize
+window.addEventListener('resize', () => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  window.renderer.setSize(width, height);
+  window.camera.aspect = width / height;
+  window.camera.updateProjectionMatrix();
+});
+
+// Error log element
+const errorLog = document.getElementById('error-log');
+
+// Listen for messages from the parent React app
+window.addEventListener('message', (event) => {
+  // For development purposes, log the origin
+  console.log('Message Origin:', event.origin);
+  
+  // Security Check: Adjust as per your development environment
+  // If using 'allow-same-origin', event.origin should match the parent origin
+  // Otherwise, if 'allow-same-origin' is not set, event.origin will be 'null'
+  // Modify the condition based on your setup
+  // For now, we'll allow all origins for testing purposes
+  // **Note:** Remove or tighten this in production
+  // if (event.origin !== 'http://localhost:3000' && event.origin !== 'null') return;
+  
+  if (event.data.type === 'executeCode') {
+    console.log('Received code:', event.data.code);
+    try {
+      // Execute the submitted code
+      eval(event.data.code);
+      console.log('Code executed successfully.');
+      errorLog.style.display = 'none'; // Hide error log on success
+      event.source.postMessage({ type: 'codeExecution', status: 'success' }, event.origin);
+    } catch (error) {
+      console.error('Error executing code:', error.message);
+      errorLog.textContent = `Error: ${error.message}`;
+      errorLog.style.display = 'block';
+      event.source.postMessage({ type: 'codeExecution', status: 'error', error: error.message }, event.origin);
+    }
+  }
+});
+
+// Optional: Function to clear the scene before adding new objects
+function clearScene() {
+  // Remove all meshes from the scene
+  window.scene.traverse((object) => {
+    if (object.isMesh) {
+      object.geometry.dispose();
+      if (object.material.isMaterial) {
+        cleanMaterial(object.material);
+      } else {
+        // an array of materials
+        for (const material of object.material) cleanMaterial(material);
+      }
+      window.scene.remove(object);
+    }
+  });
+  console.log('Scene cleared.');
+}
+
+function cleanMaterial(material) {
+  material.dispose();
+  
+  // Dispose textures
+  for (const key in material) {
+    const value = material[key];
+    if (value && typeof value === 'object' && 'minFilter' in value) {
+      value.dispose();
+    }
+  }
+}

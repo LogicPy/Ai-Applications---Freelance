@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Renderer</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Retrieve the Three.js code passed by Flask
+        const generatedCode = `{{ code | safe }}`;
+
+        // Execute the Three.js code (assuming it sets up the scene, camera, renderer, etc.)
+        (function() {
+            try {
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(renderer.domElement);
+
+                // Run the generated Three.js code
+                const executeCode = new Function('THREE', 'scene', 'camera', 'renderer', generatedCode);
+                executeCode(THREE, scene, camera, renderer);
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    renderer.render(scene, camera);
+                }
+                animate();
+            } catch (e) {
+                console.error("Error executing the generated Three.js code", e);
+            }
+        })();
+    </script>
+</body>
+</html>
