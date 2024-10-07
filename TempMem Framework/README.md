@@ -2,7 +2,6 @@
 
 # initial instructions for database creation
 
-```
 # TempMem Framework - Initial Setup Guide
 
 This guide will walk you through the steps to set up and initialize the TempMem framework, including installing dependencies and preparing the database using Flask.
