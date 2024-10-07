@@ -13,7 +13,6 @@ Ensure you have Python installed, and then install the required dependencies by 
 ```bash
 pip install spacy
 python -m spacy download en_core_web_sm
-
 ```
 
 ```bash
