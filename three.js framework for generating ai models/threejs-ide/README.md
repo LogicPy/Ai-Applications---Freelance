@@ -1,3 +1,5 @@
+![Ai-3d-js-prompter-Logo](images/3D-Ai-prompter.png)
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
