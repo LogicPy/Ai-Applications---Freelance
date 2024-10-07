@@ -1,4 +1,4 @@
-![Ai-3d-js-playground-Logo](images/3D-Ai-playground.png)
+![Ai-3d-js-playground-Logo](Images/3D-Ai-playground.png)
 
 # Getting Started with Create React App
 
