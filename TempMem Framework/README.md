@@ -10,6 +10,11 @@ This guide will walk you through the steps to set up and initialize the TempMem 
 ## 1. Install Dependencies
 
 Ensure you have Python installed, and then install the required dependencies by running:
+```bash
+pip install spacy
+python -m spacy download en_core_web_sm
+
+```
 
 ```bash
 pip install -r requirements.txt
