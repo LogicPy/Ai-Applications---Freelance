@@ -1,3 +1,5 @@
+![Ai-3d-js-playground-Logo](images/3D-Ai-playground.png)
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
