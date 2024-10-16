@@ -64,7 +64,7 @@ Before setting up the project, ensure you have the following installed:
 Update (10-16-24):
 I’ll be updating the documentation on GitHub over the next few weeks.
 
-Revieww this demonstration video on using imap4 as part of my anti-phishing detection tool:
+Review this demonstration video on using imap4 as part of my anti-phishing detection tool:
 https://www.youtube.com/watch?v=6TAzxTrGF9c
 
 And witness the beta setup for using the oauth until this application is verified, then I plan to update the ui to look much better:
