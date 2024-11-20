@@ -1,0 +1,347 @@
+
+/* Add to your existing <style> block */
+
+.message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s forwards;
+}
+
+.message .avatar {
+    width: 90px !important;
+    height: 90px !important;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.message .text {
+    background-color: #f1f1f1;
+    padding: 10px;
+    border-radius: 8px;
+    max-width: 70%;
+    position: relative;
+}
+
+.message.user .text {
+    background-color: #d1ffd6;
+}
+
+.message.ai .text {
+    background-color: #d6d1ff;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Add to your existing <style> block */
+
+@media (max-width: 600px) {
+    #chat-container {
+        padding: 10px;
+    }
+    #prompt {
+        width: 60%;
+    }
+    button {
+        padding: 8px 12px;
+    }
+    .avatar {
+        width: 30px;
+        height: 30px;
+    }
+    .text {
+        max-width: 60%;
+    }
+}
+
+pre {
+    position: relative; /* Ensure the copy button is positioned correctly */
+}
+
+3. **Ensure Language Classes are Set:**
+- When specifying the language in the code block (e.g., `python`), it enhances the highlighting.
+- Example:
+  ```html
+  <pre>
+      <code class="python">
+  print('Hello, World!')
+      </code>
+      <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+  </pre>
+  ```
+
+### **b. Persistent "Copy" Button Visibility**
+
+Instead of showing the "Copy" button only on hover, make it always visible for easier access.
+
+1. **Adjust CSS:**
+```css
+
+.copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #007bff;
+    border: none;
+    color: #fff;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+    z-index: 10; /* Ensure the button is on top */
+}
+
+/* Remove display: none; */
+pre:hover .copy-btn {
+    /* No longer needed */
+}
+
+/* Copy Button Styles */
+.copy-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #007bff;
+    border: none;
+    color: #fff;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+    z-index: 10; /* Ensure the button is on top */
+}
+
+.copy-btn::after {
+    content: "Copy to clipboard";
+    position: absolute;
+    top: -25px;
+    right: 0;
+    background: #333;
+    color: #fff;
+    padding: 3px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+}
+
+.copy-btn:hover::after {
+    opacity: 1;
+}
+
+/* Mem0 Button Styles */
+#mem0-btn {
+    padding: 10px;
+    border: none;
+    background-color: #ffc107;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-left: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#mem0-btn:hover {
+    background-color: #e0a800;
+}
+
+/* Speaker Button Styles */
+#speaker-btn {
+    padding: 10px;
+    border: none;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-left: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#speaker-btn:hover {
+    background-color: #e0e0e0;
+}
+
+/* Speaker Button Styles */
+#speaker-btn {
+    padding: 10px;
+    border: none;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-left: 5px;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#speaker-btn:hover {
+    background-color: #e0e0e0;
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0, 0, 0, 0.4); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* 15% from the top and centered */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 300px; /* Could be more or less, depending on screen size */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    text-align: center;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+#tts-form button {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#tts-form button:hover {
+    background-color: #218838;
+}
+
+/* Positioning the pre block relative to position the copy button */
+/* Positioning the pre block relative to position the copy button */
+pre {
+    position: relative; /* Ensure the copy button is positioned correctly */
+    background-color: #2d2d2d;
+    color: #ccc;
+    padding: 10px;
+    border-radius: 4px;
+    overflow: auto;
+    margin: 10px 0; /* Add some spacing around code blocks */
+}
+
+.text {
+    background-color: #f1f1f1;
+    padding: 10px;
+    border-radius: 8px;
+    max-width: 70%;
+    position: relative;
+    font-family: Arial, sans-serif, "Noto Emoji"; /* Add emoji support */
+}
+
+/* Basic styling for the sidebar and chat container */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar {
+    width: 250px;
+    height: 100vh;
+    background-color: #f0f0f0;
+    overflow-y: auto;
+    position: fixed;
+    left: 0;
+    top: 0;
+    padding: 10px;
+}
+
+.chat-session {
+    padding: 10px;
+    margin-bottom: 5px;
+    background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.chat-session:hover {
+    background-color: #e0e0e0;
+}
+
+.main-content {
+    margin-left: 270px; /* Width of the sidebar + some margin */
+    padding: 20px;
+}
+
+#chat-container {
+    border: 1px solid #cccccc;
+    padding: 10px;
+    height: 70vh;
+    overflow-y: auto;
+    background-color: #fafafa;
+}
+
+.chat-message {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    max-width: 60%;
+}
+
+.user-message {
+    background-color: #d1e7dd;
+    align-self: flex-end;
+}
+
+.ai-message {
+    background-color: #f8d7da;
+    align-self: flex-start;
+}
+
+#message-form {
+    display: flex;
+}
+
+#message-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #cccccc;
+    border-radius: 5px;
+}
+
+#send-button {
+    padding: 10px 20px;
+    margin-left: 10px;
+    border: none;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#send-button:hover {
+    background-color: #0b5ed7;
+}

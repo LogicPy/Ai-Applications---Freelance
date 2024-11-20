@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Emoji Picker Test</title>
+    <style>
+        /* Basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #emoji-btn {
+            padding: 10px;
+            border: none;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-right: 5px;
+        }
+        #emoji-btn:hover {
+            background-color: #e0e0e0;
+        }
+        #prompt {
+            width: 300px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+    <script type="module">
+        import { EmojiButton } from 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4/dist/index.min.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const emojiButton = document.querySelector('#emoji-btn');
+            const promptInput = document.querySelector('#prompt');
+
+            const picker = new EmojiButton({
+                position: 'top-end' // Optional: Adjust the position as needed
+            });
+
+            emojiButton.addEventListener('click', () => {
+                picker.togglePicker(emojiButton);
+            });
+
+            picker.on('emoji', emoji => {
+                promptInput.value += emoji;
+                promptInput.focus();
+            });
+        });
+    </script>
+</head>
+<body>
+    <button id="emoji-btn">😊</button>
+    <input type="text" id="prompt" placeholder="Type your message here">
+</body>
+</html>

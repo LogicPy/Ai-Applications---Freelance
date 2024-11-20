@@ -1,0 +1,478 @@
+<!-- templates/chat.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat with {{ ai_name }}</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: #fff;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            margin-top: 0;
+            font-family: "Orbitron", sans-serif;
+        }
+
+        .chat-session {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #495057;
+            border: 1px solid #6c757d;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: "Orbitron", sans-serif;
+            transition: background-color 0.3s;
+        }
+
+        .chat-session:hover {
+            background-color: #6c757d;
+        }
+
+        /* Main Chat Container */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Chat Header */
+        #chat-header {
+            margin-bottom: 20px;
+        }
+
+        #chat-header h1 {
+            font-family: "Orbitron", sans-serif;
+            color: #343a40;
+        }
+
+        /* Chat History */
+        #chat-history {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ced4da;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .text {
+            background-color: #e9ecef;
+            padding: 10px;
+            border-radius: 4px;
+            position: relative;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .user .text {
+            background-color: #007bff;
+            color: black;
+            margin-left: auto;
+        }
+
+        .ai .text {
+            background-color: #e9ecef;
+            color: #000;
+        }
+
+        /* Input Area */
+        #input-area {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        #input-area form {
+            display: flex;
+            width: 100%;
+        }
+
+        #input-area input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        #input-area select {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+
+        #input-area button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 16px;
+            margin-right: 5px;
+        }
+
+        #emoji-btn {
+            background-color: #f0f0f0;
+        }
+
+        #emoji-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        #speaker-btn {
+            background-color: #f0f0f0;
+        }
+
+        #speaker-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        #send-btn {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        #send-btn:hover {
+            background-color: #0069d9;
+        }
+
+        /* Loader Styles */
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #007bff;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-top: 20px;
+            }
+        }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+    
+        /* Spinner Styles */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #007bff;
+            animation: spin 1s linear infinite;
+            margin: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Chat Sessions</h2>
+        <!-- Optionally, list other chat sessions or provide navigation -->
+        <button class="chat-session" onclick="goHome()">Back to Home</button>
+    </div>
+
+    <!-- Main Chat Container -->
+    <div class="main-content">
+        <div id="chat-header">
+            <h1>Chat with {{ ai_name }}</h1>
+        </div>
+        <div id="chat-history">
+            <!-- Chat messages will appear here -->
+            {% for message in messages %}
+                <div class="message {{ message.sender }}">
+                    <img class="avatar" src="{{ url_for('static', filename='images/' + ('user_avatar.png' if message.sender == 'user' else 'ai_avatar.png')) }}" alt="{{ message.sender.capitalize() }} Avatar">
+                    <div class="text">
+                        {{ message.content | safe }}
+                        {% if message.audio_url %}
+                            <audio controls style="width: 100%; margin-top: 10px;">
+                                <source src="{{ message.audio_url }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+             <!-- Spinner Placeholder -->
+            <div id="spinner" style="display: none; text-align: center;">
+                <div class="spinner"></div>
+            </div>
+        </div>
+        <div id="input-area">
+            <form id="message-form" onsubmit="sendMessage(event)">
+                <input type="text" id="message-input" placeholder="Type your message here..." required>
+                
+                <!-- Dropdown for AI Framework Selection -->
+                <select id="framework-select">
+                    <option value="ollama" selected>Ollama</option>
+                 <!--  <option value="openai">OpenAI</option>-->
+                </select>
+                
+                <button type="button" id="emoji-btn">😊</button>
+                <button type="button" id="speaker-btn">🔊</button>
+                <button type="submit" id="send-btn">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Emoji Picker Script -->
+    <script type="module">
+        import { EmojiButton } from 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4/dist/index.min.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const emojiButton = document.querySelector('#emoji-btn');
+            const messageInput = document.querySelector('#message-input');
+
+            const picker = new EmojiButton({
+                position: 'top-end' // Optional: Adjust the position as needed
+            });
+
+            emojiButton.addEventListener('click', () => {
+                picker.togglePicker(emojiButton);
+            });
+
+            picker.on('emoji', selection => {
+                messageInput.value += selection.emoji;
+                messageInput.focus();
+            });
+        });
+    </script>
+
+    <script>
+        // Function to handle sending messages
+        async function sendMessage(event) {
+            event.preventDefault();
+            const messageInput = document.getElementById('message-input');
+            const message = messageInput.value.trim();
+            const aiName = "{{ ai_name }}"; // Injected from Flask
+            const frameworkSelect = document.getElementById('framework-select');
+            const aiFramework = frameworkSelect.value; // Get selected framework
+
+            if (!message) {
+                alert("Message cannot be empty.");
+                return;
+            }
+
+            // Display the user's message
+            appendMessage('user', message, 'user');
+            messageInput.value = '';
+
+            // Show the spinner
+            document.getElementById('spinner').style.display = 'block';
+
+
+            // Disable send button and show sending status
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            sendBtn.innerText = "Sending...";
+
+            // Send the message to the backend to get AI response
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message, ai_framework: aiFramework }), // Changed 'prompt' to 'message' and removed 'chat_id'
+                });
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new TypeError("Expected JSON, got " + contentType);
+                }
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.response) {
+                        appendMessage('ai', data.response, 'ai');
+                        // Optionally, trigger TTS here if implemented
+                    } else {
+                        console.error('No response from AI:', data.error);
+                        alert(`AI Response Failed: ${data.error}`);
+                    }
+                } else {
+                    console.error('Failed to get AI response:', data.error);
+                    alert(`AI Response Failed: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('AI Response Failed: ' + (error.message || 'An unexpected error occurred.'));
+            } finally {
+                // Hide the spinner
+                document.getElementById('spinner').style.display = 'none';
+                // Re-enable the send button
+                sendBtn.disabled = false;
+                sendBtn.innerText = "Send";
+            }
+        }
+
+
+        // Function to append messages to the chat history
+        function appendMessage(sender, message, senderType) {
+            const chatHistory = document.getElementById('chat-history');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', senderType);
+
+            // Create avatar
+            const avatar = document.createElement('img');
+            avatar.classList.add('avatar');
+            if (senderType === 'user') {
+                avatar.src = '/static/images/user_avatar.png'; // Provide your user avatar image path
+                avatar.alt = 'User Avatar';
+            } else if (senderType === 'ai') {
+                avatar.src = '/static/images/ai_avatar.png'; // Provide your AI avatar image path
+                avatar.alt = 'AI Avatar';
+            }
+
+            // Create text container
+            const textContainer = document.createElement('div');
+            textContainer.classList.add('text');
+
+            // Parse message for code blocks
+            const parsedContent = parseMessage(message);
+            textContainer.innerHTML = parsedContent;
+
+            // Assemble message
+            messageElement.appendChild(avatar);
+            messageElement.appendChild(textContainer);
+            chatHistory.appendChild(messageElement);
+
+            scrollToBottom();
+        }
+
+        // Function to parse messages for code blocks
+        function parseMessage(message) {
+            // Replace backticks with HTML code blocks
+            const regex = /```(\w+)?\n([\s\S]*?)```/g;
+            return message.replace(regex, (match, lang, code) => {
+                return `
+                    <pre>
+                        <code class="${lang || ''}">
+${escapeHtml(code)}
+                        </code>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </pre>
+                `;
+            });
+        }
+
+        // Function to escape HTML entities
+        function escapeHtml(text) {
+            var map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // Function to copy code snippets
+        function copyCode(button) {
+            const code = button.previousElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                // Provide feedback to the user
+                button.textContent = 'Copied!';
+                button.style.backgroundColor = '#28a745'; // Green color to indicate success
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.style.backgroundColor = '#007bff'; // Revert to original color
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert("Failed to copy the code. Please try again.");
+            });
+        }
+
+        // Function to scroll chat to the bottom
+        function scrollToBottom() {
+            const chatHistory = document.getElementById('chat-history');
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // Function to navigate back to home
+        function goHome() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

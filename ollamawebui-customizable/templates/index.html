@@ -1,0 +1,373 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YourAICompanion - Advanced AI Chat Server for Conversations, Storytelling & Ecommerce</title>
+    <style>
+        /* Basic styling for the layout */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Light Theme */
+        body.light-mode {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+
+        /* Dark Theme */
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: #fff;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode .sidebar {
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+
+        .sidebar h2 {
+            margin-top: 0;
+            font-family: "Orbitron", sans-serif;
+        }
+
+        .chat-session {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #495057;
+            border: 1px solid #6c757d;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: "Orbitron", sans-serif;
+            transition: background-color 0.3s;
+        }
+
+        .chat-session:hover {
+            background-color: #6c757d;
+        }
+
+        /* Main Content Styling */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Button Styles */
+        .new-chat-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .new-chat-btn:hover {
+            background-color: #218838;
+        }
+
+        /* Header Styles */
+        h1 {
+            font-family: "Orbitron", sans-serif;
+            color: #343a40;
+            transition: color 0.3s;
+        }
+
+        p {
+            font-size: 18px;
+            color: #6c757d;
+            transition: color 0.3s;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle-btn {
+            cursor: pointer;
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .theme-toggle-btn:hover {
+            background-color: #5a6268;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-top: 20px;
+            }
+        }
+		
+.plugin-highlight {
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.plugin-highlight h2 {
+    font-size: 24px;
+    color: #333;
+}
+
+.plugin-highlight p {
+    font-size: 16px;
+    color: #555;
+}
+
+.btn-highlight-2 {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #cb5382; /* Red to orange */
+	color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.3s ease-in-out;
+}
+
+.btn-highlight {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #cb5382; /* Red to orange */
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    transition: background 0.3s ease-in-out;
+}
+
+.plugin-highlight .btn-highlight:hover {
+    background: #e5a9c0; /* Reverse orange to red */
+}
+
+/* Flashing effect for unread announcements */
+.announcement-btn[data-unread="true"] {
+    animation: flash 1s infinite;
+}
+
+@keyframes flash {
+    0%, 100% {
+        background-color: #e5a9c0;
+    }
+    50% {
+        background-color: #ff0000; /* Flashing red */
+    }
+}
+
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+    
+    <!-- Meta Tags for SEO and Social Media -->
+    <meta name="description" content="Engage in meaningful conversations with YourAICompanion, an advanced AI chat server. Whether you're seeking a friendly AI friend, exploring AI-driven storytelling, or enhancing your ecommerce platform with intelligent interactions, our versatile AI solutions cater to your unique needs.">
+    <meta name="keywords" content="AI chatbot, AI conversations, AI companionship, AI storytelling, intelligent chat server, virtual friend, AI relationships, story generator AI, AI ecommerce solutions, interactive AI, conversational AI">
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="YourAICompanion - Advanced AI Chat Server">
+    <meta property="og:description" content="Connect with YourAICompanion for intelligent conversations, AI-driven storytelling, and innovative ecommerce solutions. Experience the future of interactive AI today!">
+    <meta property="og:image" content="https://www.yourdomain.com/images/og-image.jpg">
+    <meta property="og:url" content="https://www.yourdomain.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YourAICompanion">
+    <!-- Twitter Card data -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="YourAICompanion - Advanced AI Chat Server">
+    <meta name="twitter:description" content="Engage with YourAICompanion for intelligent conversations, AI storytelling, and ecommerce enhancements. Discover the capabilities of our versatile AI chat server today!">
+    <meta name="twitter:image" content="https://www.yourdomain.com/images/twitter-image.jpg">
+    <meta name="twitter:url" content="https://www.yourdomain.com/">
+    <!-- If you have a Twitter handle, you can add it below -->
+    <meta name="twitter:creator" content="@YourTwitterHandle">
+</head>
+<body class="light-mode">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Chat Sessions</h2>
+        <button class="new-chat-btn" onclick="createNewChat()">New Chat</button>
+        <div id="chat-sidebar">
+            <!-- Chat sessions are rendered here via Flask's template rendering -->
+            {% for chat in chats %}
+                <div class="chat-session" onclick="openChatSession('{{ chat.id }}')">
+                    {{ chat.name }}
+                </div>
+            {% endfor %}
+        </div>
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle-btn" id="theme-toggle">Toggle Dark Mode</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <h1>Welcome to YourAICompanion</h1>
+        <p>Select or create a chat session from the sidebar to start chatting.</p>
+		<div class="plugin-highlight">
+    <h2>Explore My Unreal Plugin</h2>
+    <p>Discover how my Groq-powered Unreal plugin transforms game development with AI chat and roleplay nodes!</p>
+    <a href="https://www.fab.com/listings/6f6a8002-25fe-4e5a-b30a-b2110912559f" target="_blank" class="btn-highlight-2">Learn More</a>
+</div>
+<section id="announcement" class="announcement-section">
+    <div class="announcement-content">
+        <h2>🎉 Big News! 🎉</h2>
+        <p>
+            We're excited to announce <strong>AI-server.cloud</strong> now broadcasts 
+            recorded GPT-4 coding synergy sessions! Witness the magic of AI and coding 
+            in action.
+        </p>
+        <a href="/announcement" class="btn-highlight">Learn More</a>
+    </div>
+</section>
+
+
+
+
+
+    </div>
+
+    <!-- JavaScript for Theme Toggle and Chat Session Handling -->
+ <script>
+    // Check if the announcement has been marked as read
+    const announcementButton = document.querySelector(".btn-highlight");
+    const hasReadAnnouncement = localStorage.getItem("announcementRead");
+
+    if (!hasReadAnnouncement) {
+        // Flash the button if the announcement hasn't been read
+        let isRed = false;
+        setInterval(() => {
+            announcementButton.style.backgroundColor = isRed ? "#007bff" : "red";
+            isRed = !isRed;
+        }, 500);
+    }
+
+    // Stop flashing when the button is clicked
+    announcementButton.addEventListener("click", () => {
+        localStorage.setItem("announcementRead", "true");
+        announcementButton.style.backgroundColor = "#007bff"; // Reset to default color
+    });
+
+
+
+        // Theme Toggle Functionality
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        // Check for saved theme preference in localStorage
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.remove('light-mode');
+            body.classList.add('dark-mode');
+            themeToggleBtn.textContent = 'Toggle Light Mode';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            body.classList.toggle('light-mode');
+
+            if (body.classList.contains('dark-mode')) {
+                themeToggleBtn.textContent = 'Toggle Light Mode';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeToggleBtn.textContent = 'Toggle Dark Mode';
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // Function to handle creating new chat sessions
+        async function createNewChat() {
+            const chatName = prompt("Enter chat name:", "New Chat with Jarvis");
+            if (!chatName) {
+                alert("Chat name cannot be empty.");
+                return;
+            }
+
+            const trimmedName = chatName.trim();
+            if (trimmedName === "") {
+                alert("Chat name cannot be empty.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/create_chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: trimmedName }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Add the new chat to the sidebar
+                    addChatToSidebar(data.chat_id, data.chat_name);
+                    // Navigate to the new chat session
+                    window.location.href = `/chat/${data.chat_id}`;
+                } else {
+                    console.error('Failed to create chat:', data.error);
+                    alert(`Failed to create chat: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Error creating chat:', error);
+                alert('An unexpected error occurred while creating the chat.');
+            }
+        }
+
+        // Function to add a chat session to the sidebar
+        function addChatToSidebar(chatId, chatName) {
+            const sidebar = document.getElementById('chat-sidebar');
+            const chatElement = document.createElement('div');
+            chatElement.classList.add('chat-session');
+            chatElement.setAttribute('data-chat-id', chatId);
+            chatElement.innerText = chatName;
+
+            // Add event listener to open the chat when clicked
+            chatElement.addEventListener('click', () => {
+                openChatSession(chatId);
+            });
+
+            sidebar.appendChild(chatElement);
+        }
+
+        // Function to handle chat session clicks
+        function openChatSession(chatId) {
+            // Navigate to the chat session URL
+            window.location.href = `/chat/${chatId}`;
+        }
+    </script>
+</body>
+</html>

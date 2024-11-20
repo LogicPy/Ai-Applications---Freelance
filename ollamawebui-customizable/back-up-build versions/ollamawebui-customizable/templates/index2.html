@@ -1,0 +1,530 @@
+<!-- templates/index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat with {{ ai_name }}</title>
+    <style>
+        /* Existing CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+            display: flex;
+            height: 100vh;
+        }
+        /* Sidebar Styles */
+        #sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: #fff;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        #sidebar h2 {
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 24px;
+            border-bottom: 1px solid #495057;
+            padding-bottom: 10px;
+        }
+        #chat-list {
+            list-style: none;
+        }
+        #chat-list li {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #495057;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #chat-list li:hover {
+            background-color: #6c757d;
+        }
+        #create-chat-btn-sidebar {
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #create-chat-btn-sidebar:hover {
+            background-color: #0069d9;
+        }
+        /* Chat Container Styles */
+        #chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        #chat-header {
+            margin-bottom: 10px;
+        }
+        #chat-header h1 {
+            margin: 0;
+        }
+        #chat-history {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 4px;
+            position: relative;
+        }
+        .message {
+            margin-bottom: 15px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.5s forwards;
+            display: flex;
+            align-items: flex-start;
+        }
+        .message.user .avatar {
+            margin-right: 10px;
+        }
+        .message.ai .avatar {
+            margin-right: 10px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .text {
+            background-color: #f1f1f1;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 70%;
+            position: relative;
+            white-space: pre-wrap; /* Preserve formatting */
+        }
+        .message.user .text {
+            background-color: #d1ffd6;
+        }
+        .message.ai .text {
+            background-color: #d6d1ff;
+        }
+        /* Loading Spinner Styles */
+        #loading-spinner {
+            display: none; /* Hidden by default */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #28a745;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        /* Typing Indicator Styles */
+        #typing-indicator {
+            display: none; /* Hidden by default */
+            margin-top: 10px;
+            font-style: italic;
+            color: #888;
+        }
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Input and Buttons */
+        #input-area {
+            display: flex;
+            margin-top: 10px;
+        }
+        #prompt {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #emoji-btn {
+            padding: 10px;
+            border: none;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        #emoji-btn:hover {
+            background-color: #e0e0e0;
+        }
+        #send-btn {
+            padding: 10px 15px;
+            margin-left: 5px;
+            border: none;
+            border-radius: 4px;
+            background-color: #28a745;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #send-btn:hover {
+            background-color: #218838;
+        }
+        /* Code Block Styles */
+        pre {
+            position: relative; /* Ensure the copy button is positioned correctly */
+            background-color: #2d2d2d;
+            color: #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            overflow: auto;
+            margin: 10px 0; /* Add some spacing around code blocks */
+        }
+        code {
+            font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+        }
+        /* Copy Button Styles */
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #007bff;
+            border: none;
+            color: #fff;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background-color 0.3s;
+            z-index: 10; /* Ensure the button is on top */
+        }
+        .copy-btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script type="module">
+        import { EmojiButton } from 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4/dist/index.min.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const AI_NAME = "{{ ai_name }}";  // Injected from Flask
+            const emojiButton = document.querySelector('#emoji-btn');
+            const promptInput = document.querySelector('#prompt');
+
+            const picker = new EmojiButton({
+                position: 'top-end' // Optional: Adjust the position as needed
+            });
+
+            emojiButton.addEventListener('click', () => {
+                console.log("Emoji button clicked!");
+                picker.togglePicker(emojiButton);
+            });
+
+            picker.on('emoji', selection => {
+                console.log("Emoji selected:", selection);
+                promptInput.value += selection.emoji; // Access the emoji character
+                promptInput.focus();
+            });
+
+            // Make AI_NAME available globally if needed
+            window.AI_NAME = AI_NAME;
+        });
+    </script>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <h2>Chat Sessions</h2>
+        <ul id="chat-list">
+            {% for chat in all_chats %}
+                <li onclick="window.location.href='/c/{{ chat.id }}'">
+                    {{ chat.name }}
+                </li>
+            {% endfor %}
+        </ul>
+        <button id="create-chat-btn-sidebar" onclick="createNewChatSidebar()">+ New Chat</button>
+    </div>
+
+    <!-- Chat Container -->
+    <div id="chat-container">
+        <div id="chat-header">
+            <h1>Chat with {{ ai_name }}</h1>
+        </div>
+        <div id="chat-history">
+            <!-- Chat messages will appear here -->
+            <!-- Loading Spinner -->
+            <div id="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+            <!-- Typing Indicator -->
+            <div id="typing-indicator">{{ ai_name }} is typing...</div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="prompt" placeholder="Type your message here">
+            <button id="emoji-btn">😊</button> <!-- Emoji Button -->
+            <button id="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <!-- JavaScript for Sidebar and Messaging Functionality -->
+    <script>
+        async function sendMessage() {
+            const promptInput = document.getElementById('prompt');
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                alert("Please enter a message.");
+                return;
+            }
+
+            const chat_id = "{{ chat_id }}";
+
+            // Show loading spinner and typing indicator
+            document.getElementById('loading-spinner').style.display = 'block';
+            document.getElementById('typing-indicator').style.display = 'block';
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ chat_id: chat_id, prompt: prompt }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Display user message with avatar
+                    appendMessage('You', prompt, 'user');
+                    // Hide loading spinner and typing indicator
+                    document.getElementById('loading-spinner').style.display = 'none';
+                    document.getElementById('typing-indicator').style.display = 'none';
+                    // Display AI response with typing animation and avatar
+                    typeMessage(AI_NAME, data.response, 'ai');
+                    promptInput.value = '';
+                } else {
+                    // Hide loading spinner and typing indicator
+                    document.getElementById('loading-spinner').style.display = 'none';
+                    document.getElementById('typing-indicator').style.display = 'none';
+                    // Display error message from backend
+                    alert(data.response);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                // Hide loading spinner and typing indicator
+                document.getElementById('loading-spinner').style.display = 'none';
+                document.getElementById('typing-indicator').style.display = 'none';
+                alert("Failed to send message. Please try again.");
+            }
+        }
+
+        function appendMessage(sender, message, senderType) {
+            const chatHistory = document.getElementById('chat-history');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', senderType);
+
+            // Create avatar
+            const avatar = document.createElement('img');
+            avatar.classList.add('avatar');
+            if (senderType === 'user') {
+                avatar.src = '/static/images/user_avatar.png'; // Provide your user avatar image path
+                avatar.alt = 'User Avatar';
+            } else if (senderType === 'ai') {
+                avatar.src = '/static/images/ai_avatar.png'; // Provide your AI avatar image path
+                avatar.alt = 'AI Avatar';
+            }
+
+            // Create text container
+            const textContainer = document.createElement('div');
+            textContainer.classList.add('text');
+
+            // Parse message for code blocks
+            const parsedContent = parseMessage(message);
+            textContainer.innerHTML = parsedContent;
+
+            // Assemble message
+            messageElement.appendChild(avatar);
+            messageElement.appendChild(textContainer);
+            chatHistory.appendChild(messageElement);
+
+            scrollToBottom();
+        }
+
+        function typeMessage(sender, message, senderType) {
+            const chatHistory = document.getElementById('chat-history');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', senderType);
+
+            // Create avatar
+            const avatar = document.createElement('img');
+            avatar.classList.add('avatar');
+            if (senderType === 'ai') {
+                avatar.src = '/static/images/ai_avatar.png'; // Provide your AI avatar image path
+                avatar.alt = 'AI Avatar';
+            }
+
+            // Create text container
+            const textContainer = document.createElement('div');
+            textContainer.classList.add('text');
+            const strong = document.createElement('strong');
+            strong.textContent = `${sender}: `;
+            const span = document.createElement('span');
+            textContainer.appendChild(strong);
+            textContainer.appendChild(span);
+
+            // Assemble message
+            messageElement.appendChild(avatar);
+            messageElement.appendChild(textContainer);
+            chatHistory.appendChild(messageElement);
+
+            let index = 0;
+            const typingSpeed = 50; // milliseconds per character
+
+            const typingInterval = setInterval(() => {
+                if (index < message.length) {
+                    // Check for code blocks
+                    if (message.substring(index, index + 3) === '```') {
+                        // Find the closing ```
+                        const endIndex = message.indexOf('```', index + 3);
+                        if (endIndex !== -1) {
+                            const lang = ''; // You can extract the language if needed
+                            const codeContent = message.substring(index + 3, endIndex);
+                            const formattedCode = formatCode(codeContent, lang);
+                            span.innerHTML += formattedCode;
+                            index = endIndex + 3;
+                        } else {
+                            // If no closing ```, append the rest
+                            span.textContent += message.substring(index);
+                            index = message.length;
+                        }
+                    } else {
+                        span.textContent += message.charAt(index);
+                        index++;
+                    }
+                    scrollToBottom();
+                } else {
+                    clearInterval(typingInterval);
+                }
+            }, typingSpeed);
+        }
+
+        function scrollToBottom() {
+            const chatHistory = document.getElementById('chat-history');
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function createNewChatSidebar() {
+            // Prompt user for a new chat name
+            const chatName = prompt("Enter a name for the new chat session:", "New Chat with {{ ai_name }}");
+            if (chatName) {
+                // Trim whitespace and validate
+                const trimmedName = chatName.trim();
+                if (trimmedName === "") {
+                    alert("Chat name cannot be empty.");
+                    return;
+                }
+
+                // Optional: Check for duplicate names
+                const existingChats = document.querySelectorAll('#chat-list li');
+                for (let chat of existingChats) {
+                    if (chat.textContent.trim().toLowerCase() === trimmedName.toLowerCase()) {
+                        alert("A chat session with this name already exists.");
+                        return;
+                    }
+                }
+
+                // Proceed to create the new chat session
+                fetch('/create_chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: trimmedName }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to display the new chat session in the sidebar
+                        window.location.reload();
+                    } else {
+                        alert(data.error || "Failed to create a new chat session.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("An error occurred while creating a new chat session.");
+                });
+            }
+        }
+
+        function parseMessage(message) {
+            // Replace backticks with HTML code blocks
+            const regex = /```(\w+)?\n([\s\S]*?)```/g;
+            return message.replace(regex, (match, lang, code) => {
+                return `
+                    <pre>
+                        <code class="${lang || ''}">
+${escapeHtml(code)}
+                        </code>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </pre>
+                `;
+            });
+        }
+
+        function formatCode(code, lang = '') {
+            return `
+                <pre>
+                    <code class="${lang}">
+${escapeHtml(code)}
+                    </code>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </pre>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        function copyCode(button) {
+            const code = button.previousElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                // Provide feedback to the user
+                button.textContent = 'Copied!';
+                button.style.backgroundColor = '#28a745'; // Green color to indicate success
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.style.backgroundColor = '#007bff'; // Revert to original color
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert("Failed to copy the code. Please try again.");
+            });
+        }
+
+        window.onload = function() {
+            // Optionally, load chat history when the page loads
+            scrollToBottom();
+        };
+    </script>
+</body>
+</html>

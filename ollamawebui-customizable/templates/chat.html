@@ -1,0 +1,717 @@
+<!-- templates/chat.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat with {{ ai_name }}</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Light Theme */
+        body.light-mode {
+            background-color: #f8f9fa;
+            color: #212529;
+        }
+
+        /* Dark Theme */
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background-color: #343a40;
+            color: #fff;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode .sidebar {
+            background-color: #1e1e1e;
+            color: #ffffff;
+        }
+
+        .sidebar h2 {
+            margin-top: 0;
+            font-family: "Orbitron", sans-serif;
+        }
+
+        .chat-session {
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #495057;
+            border: 1px solid #6c757d;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: "Orbitron", sans-serif;
+            transition: background-color 0.3s;
+        }
+
+        .chat-session:hover {
+            background-color: #6c757d;
+        }
+
+        /* Main Chat Container */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* Chat Header */
+        #chat-header {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #chat-header h1 {
+            font-family: "Orbitron", sans-serif;
+            color: #343a40;
+            transition: color 0.3s;
+        }
+
+        /* Chat History */
+        #chat-history {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ced4da;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #ffffff;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode #chat-history {
+            background-color: #1e1e1e;
+            border: 1px solid #343a40;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .text {
+            padding: 10px;
+            border-radius: 4px;
+            position: relative;
+            max-width: 70%;
+            word-wrap: break-word;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode .text {
+            background-color: #343a40;
+            color: #ffffff;
+        }
+
+        .user .text {
+            background-color: #007bff;
+            color: #fff;
+            margin-left: auto;
+        }
+
+        .ai .text {
+            color: #000;
+        }
+
+        /* Input Area */
+        #input-area {
+            display: flex;
+            margin-top: 20px;
+        }
+
+        #input-area form {
+            display: flex;
+            width: 100%;
+        }
+
+        #input-area input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 16px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode #input-area input {
+            background-color: #343a40;
+            color: #ffffff;
+            border: 1px solid #495057;
+        }
+
+        #input-area select {
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 16px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.dark-mode #input-area select {
+            background-color: #343a40;
+            color: #ffffff;
+            border: 1px solid #495057;
+        }
+
+        #input-area button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 16px;
+            margin-right: 5px;
+        }
+
+        #emoji-btn {
+            background-color: #f0f0f0;
+        }
+
+        #emoji-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        #speaker-btn {
+            background-color: #f0f0f0;
+        }
+
+        #speaker-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        #send-btn {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        #send-btn:hover {
+            background-color: #0069d9;
+        }
+
+        /* Loader Styles */
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #007bff;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-top: 20px;
+            }
+        }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        /* Spinner Styles */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+		
+		.theme-toggle-btn {
+    cursor: pointer;
+    padding: 10px 20px;
+    background-color: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+}
+
+.theme-toggle-btn:hover {
+    background-color: #5a6268;
+}
+
+/* Code Block Styling */
+
+/* Code Block Styling */
+/* Code Block Styling */
+pre {
+    background-color: #f8f9fa; /* Adjust for dark mode */
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 10px 0;
+    white-space: pre-wrap; /* Preserves whitespace and allows wrapping */
+}
+
+pre code {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    white-space: pre-wrap;
+    margin: 0;
+}
+
+/* Inline Code Styling */
+code {
+    background-color: #e9ecef;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+
+/* Dark Mode Adjustments */
+body.dark-mode pre {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+body.dark-mode pre code {
+    color: #ffffff;
+}
+
+    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
+
+    <!-- Meta Tags for SEO and Social Media -->
+    <meta name="description" content="Engage in meaningful conversations with YourAICompanion, an advanced AI chat server. Whether you're seeking a friendly AI friend, exploring AI-driven storytelling, or enhancing your ecommerce platform with intelligent interactions, our versatile AI solutions cater to your unique needs.">
+    <meta name="keywords" content="AI chatbot, AI conversations, AI companionship, AI storytelling, intelligent chat server, virtual friend, AI relationships, story generator AI, AI ecommerce solutions, interactive AI, conversational AI">
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="YourAICompanion - Advanced AI Chat Server">
+    <meta property="og:description" content="Connect with YourAICompanion for intelligent conversations, AI-driven storytelling, and innovative ecommerce solutions. Experience the future of interactive AI today!">
+    <meta property="og:image" content="https://www.yourdomain.com/images/og-image.jpg">
+    <meta property="og:url" content="https://www.yourdomain.com/">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="YourAICompanion">
+    <!-- Twitter Card data -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="YourAICompanion - Advanced AI Chat Server">
+    <meta name="twitter:description" content="Engage with YourAICompanion for intelligent conversations, AI storytelling, and ecommerce enhancements. Discover the capabilities of our versatile AI chat server today!">
+    <meta name="twitter:image" content="https://www.yourdomain.com/images/twitter-image.jpg">
+    <meta name="twitter:url" content="https://www.yourdomain.com/">
+    <!-- If you have a Twitter handle, you can add it below -->
+    <meta name="twitter:creator" content="@YourTwitterHandle">
+</head>
+<body class="light-mode">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Chat Sessions</h2>
+        <button class="chat-session" onclick="createNewChat()">New Chat</button>
+        <div id="chat-sidebar">
+            <!-- Chat sessions are rendered here via Flask's template rendering -->
+            {% for chat in chats %}
+                <div class="chat-session" onclick="openChatSession('{{ chat.id }}')">
+                    {{ chat.name }}
+                </div>
+            {% endfor %}
+        </div>
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle-btn" id="theme-toggle">Toggle Dark Mode</button>
+    </div>
+
+    <!-- Main Chat Container -->
+    <div class="main-content">
+        <div id="chat-header">
+            <h1>Chat with {{ ai_name }}</h1>
+            <div>
+                <button class="chat-session" id="theme-toggle-chat">Toggle Dark Mode</button>
+				<button class="chat-session" id="back-btn" onclick="goHome()">Back</button>
+            </div>
+        </div>
+        <div id="chat-history">
+            <!-- Chat messages will appear here -->
+            {% for message in messages %}
+                <div class="message {{ message.sender }}">
+                    <img class="avatar" src="{{ url_for('static', filename='images/' + ('user_avatar.png' if message.sender == 'user' else 'ai_avatar.png')) }}" alt="{{ message.sender.capitalize() }} Avatar">
+                    <div class="text">
+                        {{ message.content | safe }}
+                        {% if message.audio_url %}
+                            <audio controls style="width: 100%; margin-top: 10px;">
+                                <source src="{{ message.audio_url }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+            <!-- Spinner Placeholder -->
+            <div id="spinner" style="display: none; text-align: center;">
+                <div class="spinner"></div>
+            </div>
+        </div>
+        <div id="input-area">
+            <form id="message-form" onsubmit="sendMessage(event)">
+                <input type="text" id="message-input" placeholder="Type your message here..." required>
+                
+                <!-- Dropdown for AI Framework Selection -->
+                <select id="framework-select">
+                    <option value="ollama" selected>Ollama</option>
+                    <!-- <option value="openai">OpenAI</option> -->
+                </select>
+                
+                <button type="button" id="emoji-btn">😊</button>
+                <button type="button" id="speaker-btn">🔊</button>
+                <button type="submit" id="send-btn">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Emoji Picker Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4/dist/index.min.js"></script>
+	<!-- Load the Emoji Picker Locally -->
+
+    <script type="module">
+        import { EmojiButton } from 'https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4/dist/index.min.js';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const emojiButton = document.querySelector('#emoji-btn');
+            const messageInput = document.querySelector('#message-input');
+
+            const picker = new EmojiButton({
+                position: 'top-end' // Optional: Adjust the position as needed
+            });
+
+            emojiButton.addEventListener('click', () => {
+                picker.togglePicker(emojiButton);
+            });
+
+            picker.on('emoji', selection => {
+                messageInput.value += selection.emoji;
+                messageInput.focus();
+            });
+        });
+    </script>
+
+	</script>
+    <!-- JavaScript for Theme Toggle, Emoji Picker, Back Button, and Chat Functionality -->
+    <script>
+        // Theme Toggle Functionality for Sidebar
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        // Check for saved theme preference in localStorage
+        if (localStorage.getItem('theme') === 'dark') {
+            body.classList.remove('light-mode');
+            body.classList.add('dark-mode');
+            themeToggleBtn.textContent = 'Toggle Light Mode';
+        }
+
+        themeToggleBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            body.classList.toggle('light-mode');
+
+            if (body.classList.contains('dark-mode')) {
+                themeToggleBtn.textContent = 'Toggle Light Mode';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeToggleBtn.textContent = 'Toggle Dark Mode';
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // Theme Toggle Functionality for Chat Header
+        const themeToggleChatBtn = document.getElementById('theme-toggle-chat');
+
+        themeToggleChatBtn.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            body.classList.toggle('light-mode');
+
+            if (body.classList.contains('dark-mode')) {
+                themeToggleChatBtn.textContent = 'Toggle Light Mode';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeToggleChatBtn.textContent = 'Toggle Dark Mode';
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // Back Button Functionality
+        function goHome() {
+            window.location.href = '/';
+        }
+
+        // Function to handle creating new chat sessions
+        async function createNewChat() {
+            const chatName = prompt("Enter chat name:", "New Chat with Jarvis");
+            if (!chatName) {
+                alert("Chat name cannot be empty.");
+                return;
+            }
+
+            const trimmedName = chatName.trim();
+            if (trimmedName === "") {
+                alert("Chat name cannot be empty.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/create_chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ name: trimmedName }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Add the new chat to the sidebar
+                    addChatToSidebar(data.chat_id, data.chat_name);
+                    // Navigate to the new chat session
+                    window.location.href = `/chat/${data.chat_id}`;
+                } else {
+                    console.error('Failed to create chat:', data.error);
+                    alert(`Failed to create chat: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Error creating chat:', error);
+                alert('An unexpected error occurred while creating the chat.');
+            }
+        }
+
+        // Function to add a chat session to the sidebar
+        function addChatToSidebar(chatId, chatName) {
+            const sidebar = document.getElementById('chat-sidebar');
+            const chatElement = document.createElement('div');
+            chatElement.classList.add('chat-session');
+            chatElement.setAttribute('data-chat-id', chatId);
+            chatElement.innerText = chatName;
+
+            // Add event listener to open the chat when clicked
+            chatElement.addEventListener('click', () => {
+                openChatSession(chatId);
+            });
+
+            sidebar.appendChild(chatElement);
+        }
+
+        // Function to handle chat session clicks
+        function openChatSession(chatId) {
+            // Navigate to the chat session URL
+            window.location.href = `/chat/${chatId}`;
+        }
+
+        // Function to handle sending messages
+        async function sendMessage(event) {
+            event.preventDefault();
+            const messageInput = document.getElementById('message-input');
+            const message = messageInput.value.trim();
+            const aiName = "{{ ai_name }}"; // Injected from Flask
+            const frameworkSelect = document.getElementById('framework-select');
+            const aiFramework = frameworkSelect.value; // Get selected framework
+
+            if (!message) {
+                alert("Message cannot be empty.");
+                return;
+            }
+
+            // Display the user's message
+            appendMessage('user', message, 'user');
+            messageInput.value = '';
+
+            // Show the spinner
+            document.getElementById('spinner').style.display = 'block';
+
+            // Disable send button and show sending status
+            const sendBtn = document.getElementById('send-btn');
+            sendBtn.disabled = true;
+            sendBtn.innerText = "Sending...";
+
+            // Send the message to the backend to get AI response
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        message: message,
+                        ai_framework: aiFramework // Changed 'prompt' to 'message' and removed 'chat_id'
+                    }),
+                });
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new TypeError("Expected JSON, got " + contentType);
+                }
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    if (data.response) {
+                        appendMessage('ai', data.response, 'ai');
+                        // Optionally, trigger TTS here if implemented
+                    } else {
+                        console.error('No response from AI:', data.error);
+                        alert(`AI Response Failed: ${data.error}`);
+                    }
+                } else {
+                    console.error('Failed to get AI response:', data.error);
+                    alert(`AI Response Failed: ${data.error}`);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('AI Response Failed: ' + (error.message || 'An unexpected error occurred.'));
+            } finally {
+                // Hide the spinner
+                document.getElementById('spinner').style.display = 'none';
+                // Re-enable the send button
+                sendBtn.disabled = false;
+                sendBtn.innerText = "Send";
+            }
+        }
+
+        // Function to append messages to the chat history
+        function appendMessage(sender, message, senderType) {
+            const chatHistory = document.getElementById('chat-history');
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', senderType);
+
+            // Create avatar
+            const avatar = document.createElement('img');
+            avatar.classList.add('avatar');
+            if (senderType === 'user') {
+                avatar.src = '/static/images/user_avatar.png'; // Provide your user avatar image path
+                avatar.alt = 'User Avatar';
+            } else if (senderType === 'ai') {
+                avatar.src = '/static/images/ai_avatar.png'; // Provide your AI avatar image path
+                avatar.alt = 'AI Avatar';
+            }
+
+            // Create text container
+            const textContainer = document.createElement('div');
+            textContainer.classList.add('text');
+
+            // Parse message for code blocks
+            const parsedContent = parseMessage(message);
+            textContainer.innerHTML = parsedContent;
+
+            // Assemble message
+            messageElement.appendChild(avatar);
+            messageElement.appendChild(textContainer);
+            chatHistory.appendChild(messageElement);
+
+            scrollToBottom();
+        }
+
+		// Function to parse messages for code blocks
+// Function to parse messages for code blocks
+	// Function to parse messages for code blocks and inline code
+	function parseMessage(message) {
+		// Handle code blocks
+		const codeBlockRegex = /`{3,}\s*([\w+-]*)\s*\n?([\s\S]*?)`{3,}\s*/g;
+		message = message.replace(codeBlockRegex, (match, lang, code) => {
+			return `<pre><code class="${lang || ''}">${escapeHtml(code)}</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>`;
+		});
+
+		// Handle inline code
+		const inlineCodeRegex = /`([^`]+)`/g;
+		message = message.replace(inlineCodeRegex, (match, code) => {
+			return `<code>${escapeHtml(code)}</code>`;
+		});
+
+		return message;
+	}
+
+
+	// Function to escape HTML entities
+	function escapeHtml(text) {
+		const map = {
+			'&': '&amp;',
+			'<': '&lt;',
+			'>': '&gt;',
+			'"': '&quot;',
+			"'": '&#039;',
+			'`': '&#096;'  // Escaping backticks
+		};
+		return text.replace(/[&<>"'`]/g, function(m) { return map[m]; });
+	}
+
+
+
+
+
+	// Function to copy code snippets
+	function copyCode(button) {
+		const codeElement = button.previousElementSibling;
+		const code = codeElement.textContent.trim();
+		navigator.clipboard.writeText(code).then(() => {
+			// Provide feedback to the user
+			button.textContent = 'Copied!';
+			button.style.backgroundColor = '#28a745'; // Green color to indicate success
+			setTimeout(() => {
+				button.textContent = 'Copy';
+				button.style.backgroundColor = '#007bff'; // Revert to original color
+			}, 2000);
+		}).catch(err => {
+			console.error('Failed to copy: ', err);
+			alert("Failed to copy the code. Please try again.");
+		});
+	}
+
+
+        // Function to scroll chat to the bottom
+        function scrollToBottom() {
+            const chatHistory = document.getElementById('chat-history');
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+    </script>
+</body>
+</html>

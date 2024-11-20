@@ -1,0 +1,21 @@
+/* static/css/dark-theme.css */
+
+body {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+.card {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
