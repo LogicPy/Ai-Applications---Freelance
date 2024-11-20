@@ -9,10 +9,14 @@ import logging
 import os
 from flask import url_for
 
-
-
 from dotenv import load_dotenv
 from utils.sanitization import sanitize_ai_message, post_process_ai_message
+import requests
+import json
+
+
+#client = MemoryClient(api_key="m0-enlAKCd9ZVXSkKVvPgl23bwUwyspVlsIQPJCPbsF")
+
 
 # Initialize Flask application
 app = Flask(__name__)
@@ -89,13 +93,13 @@ def create_chat():
         new_chat = ChatSession(id=new_chat_id, name=chat_name, context="")
         db.session.add(new_chat)
         db.session.commit()
-        
+
         # Update the user's session
         if 'chat_ids' not in session:
             session['chat_ids'] = []
         session['chat_ids'].append(new_chat_id)
         session['current_chat_id'] = new_chat_id
-        
+
         return jsonify({'success': True, 'chat_id': new_chat_id, 'chat_name': chat_name}), 200
     except Exception as e:
         db.session.rollback()
@@ -121,7 +125,7 @@ def chat():
     try:
         data = request.get_json()
         user_message = data.get('message', '').strip()
-        ai_framework = data.get('ai_framework', 'ollama').strip()  # Default to Ollama
+        ai_framework = data.get('ai_framework', 'ollama').strip().lower()  # Default to Ollama
         chat_id = session.get('current_chat_id')
 
         if not chat_id:
@@ -136,8 +140,14 @@ def chat():
         user_msg = ChatMessage(chat_id=chat_id, sender='user', content=sanitized_message, sanitized=True)
         db.session.add(user_msg)
 
-        # Get AI response
-        ai_response = get_ai_response(user_message, chat_id, ai_framework)
+        # Get AI response based on selected framework
+        if ai_framework == 'ollama':
+            ai_response = get_ai_response(user_message, chat_id, ai_framework)
+        elif ai_framework == 'grok':
+            ai_response = get_grok_response(user_message, chat_id)
+        else:
+            logging.warning(f"Unsupported AI framework selected: {ai_framework}")
+            ai_response = "Unsupported AI framework selected."
 
         # Save AI response to the database
         sanitized_ai_response = sanitize_ai_message(ai_response.strip())
@@ -152,14 +162,6 @@ def chat():
         db.session.rollback()
         logging.error(f"Error in chat endpoint: {e}")
         return jsonify({'error': 'An error occurred during the chat.'}), 500
-
-
-# Function to generate AI response using Ollama
-# app.py
-
-import requests
-import json
-import logging
 
 # Function to generate AI response using Ollama
 def get_ai_response(message, chat_id, ai_framework):
@@ -185,7 +187,7 @@ def get_ai_response(message, chat_id, ai_framework):
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an advanced AI assistant. Please respond concisely and helpfully."
+                    "content": "You are an AI assistant named Llama3, known for concise and accurate responses."
                 },
                 {
                     "role": "user",
@@ -227,14 +229,85 @@ def get_ai_response(message, chat_id, ai_framework):
         logging.error(f"Error generating Ollama response: {e}")
         return "I'm sorry, an error occurred while processing your request."
 
+# Function to generate AI response using Grok
+def get_grok_response(message, chat_id):
+    """
+    Generates a response from the Grok AI model based on the user's message.
+    """
+    try:
+        # Replace with your actual Grok API key from environment variables
+        API_KEY = os.getenv('GROK_API_KEY')
+        if not API_KEY:
+            logging.error("GROK_API_KEY is not set in environment variables.")
+            return "Grok API key not configured."
+
+        # Define the API URL
+        api_url = "https://api.x.ai/v1/chat/completions"
+
+        # Define headers for the API call
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+
+        # Fetch the chat session context
+        chat_session = ChatSession.query.filter_by(id=chat_id).first()
+        if not chat_session:
+            logging.warning(f"Chat session with id {chat_id} not found.")
+            return "I'm sorry, but I couldn't find the current chat session."
+
+        context = chat_session.context + f"User: {message}\n"
+
+        # Prepare the payload for the Grok API
+        payload = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are an AI model named Grok. When asked, identify yourself clearly and provide accurate responses without humor or ambiguity."
+                },
+                {
+                    "role": "user",
+                    "content": context
+                }
+            ],
+            "model": "grok-beta",  # Use the appropriate Grok model
+            "stream": False,
+            "temperature": 0
+        }
+
+        # Make the API request to Grok
+        response = requests.post(api_url, headers=headers, json=payload)
+        response.raise_for_status()
+
+        # Parse the response from Grok
+        response_json = response.json()
+        assistant_reply = (
+            response_json.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "")
+        )
+
+        if not assistant_reply.strip():
+            logging.warning("No valid response from Grok.")
+            return "I'm sorry, I couldn't process your request at this time."
+
+        # Update the chat session context
+        chat_session.context += f"AI: {assistant_reply.strip()}\n"
+        db.session.add(chat_session)
+        db.session.commit()
+
+        return assistant_reply.strip()
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error connecting to Grok API: {e}")
+        return "I'm sorry, I couldn't connect to the AI server."
+    except Exception as e:
+        logging.error(f"Error generating Grok response: {e}")
+        return "I'm sorry, an error occurred while processing your request."
+
 @app.route('/announcement')
 def announcement():
     return render_template('announcement.html')
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=443, ssl_context=('SSL/certificate.crt', 'SSL/private.key'))
-
-# Run the Flask application
 if __name__ == '__main__':
     # Paths to your SSL certificate and private key
     cert_file = 'SSL/certificate.crt'

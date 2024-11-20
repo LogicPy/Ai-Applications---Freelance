@@ -364,53 +364,61 @@ body.dark-mode pre code {
         <button class="theme-toggle-btn" id="theme-toggle">Toggle Dark Mode</button>
     </div>
 
-    <!-- Main Chat Container -->
-    <div class="main-content">
-        <div id="chat-header">
-            <h1>Chat with {{ ai_name }}</h1>
-            <div>
-                <button class="chat-session" id="theme-toggle-chat">Toggle Dark Mode</button>
-				<button class="chat-session" id="back-btn" onclick="goHome()">Back</button>
-            </div>
-        </div>
-        <div id="chat-history">
-            <!-- Chat messages will appear here -->
-            {% for message in messages %}
-                <div class="message {{ message.sender }}">
-                    <img class="avatar" src="{{ url_for('static', filename='images/' + ('user_avatar.png' if message.sender == 'user' else 'ai_avatar.png')) }}" alt="{{ message.sender.capitalize() }} Avatar">
-                    <div class="text">
-                        {{ message.content | safe }}
-                        {% if message.audio_url %}
-                            <audio controls style="width: 100%; margin-top: 10px;">
-                                <source src="{{ message.audio_url }}" type="audio/mpeg">
-                                Your browser does not support the audio element.
-                            </audio>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
-            <!-- Spinner Placeholder -->
-            <div id="spinner" style="display: none; text-align: center;">
-                <div class="spinner"></div>
-            </div>
-        </div>
-        <div id="input-area">
-            <form id="message-form" onsubmit="sendMessage(event)">
-                <input type="text" id="message-input" placeholder="Type your message here..." required>
-                
-                <!-- Dropdown for AI Framework Selection -->
-                <select id="framework-select">
-                    <option value="ollama" selected>Ollama</option>
-                    <!-- <option value="openai">OpenAI</option> -->
-                </select>
-                
-                <button type="button" id="emoji-btn">😊</button>
-                <button type="button" id="speaker-btn">🔊</button>
-                <button type="submit" id="send-btn">Send</button>
-            </form>
+<!-- chat.html -->
+
+<!-- Main Chat Container -->
+<div class="main-content">
+    <div id="chat-header">
+        <h1>Chat with {{ ai_name }}</h1>
+        <div>
+            <button class="theme-toggle-btn" id="theme-toggle-chat">Toggle Dark Mode</button>
+            <button class="theme-toggle-btn" id="back-btn" onclick="goHome()">Back</button>
         </div>
     </div>
+    <div id="chat-history">
+        <!-- Chat messages will appear here -->
+        {% for message in messages %}
+            <div class="message {{ message.sender }}">
+                <img class="avatar" src="{{ url_for('static', filename='images/' + ('user_avatar.png' if message.sender == 'user' else 'ai_avatar.png')) }}" alt="{{ message.sender.capitalize() }} Avatar">
+                <div class="text">
+                    {{ message.content | safe }}
+                    {% if message.audio_url %}
+                        <audio controls style="width: 100%; margin-top: 10px;">
+                            <source src="{{ message.audio_url }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+        <!-- Spinner Placeholder -->
+        <div id="spinner" style="display: none; text-align: center;">
+            <div class="spinner"></div>
+        </div>
+    </div>
+  <div id="input-area">
+    <form id="message-form" onsubmit="sendMessage(event)">
+        <input type="text" id="message-input" placeholder="Type your message here..." required>
+        
+        <!-- Dropdown for AI Framework Selection -->
+        <select id="framework-select">
+            <option value="ollama" selected>Ollama</option>
+            <option value="grok">Grok</option> 
+        </select>
+        
+        <button type="button" id="emoji-btn">😊</button>
+        <button type="button" id="speaker-btn">🔊</button>
+        <button type="submit" id="send-btn">Send</button>
+    </form>
+</div>
 
+</div>
+
+<!-- Emoji Picker Library -->
+<script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
+<!-- Load the Emoji Picker Locally -->
+<script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
+<!-- Initialize Emoji Picker -->
     <!-- Emoji Picker Library -->
     <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4/dist/index.min.js"></script>
 	<!-- Load the Emoji Picker Locally -->
@@ -437,281 +445,293 @@ body.dark-mode pre code {
         });
     </script>
 
-	</script>
-    <!-- JavaScript for Theme Toggle, Emoji Picker, Back Button, and Chat Functionality -->
-    <script>
-        // Theme Toggle Functionality for Sidebar
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const body = document.body;
+<!-- JavaScript for Theme Toggle, Emoji Picker, Back Button, and Chat Functionality -->
+<script>
+    // Theme Toggle Functionality for Sidebar
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    const body = document.body;
 
-        // Check for saved theme preference in localStorage
-        if (localStorage.getItem('theme') === 'dark') {
-            body.classList.remove('light-mode');
-            body.classList.add('dark-mode');
+    // Check for saved theme preference in localStorage
+    if (localStorage.getItem('theme') === 'dark') {
+        body.classList.remove('light-mode');
+        body.classList.add('dark-mode');
+        themeToggleBtn.textContent = 'Toggle Light Mode';
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        body.classList.toggle('light-mode');
+
+        if (body.classList.contains('dark-mode')) {
             themeToggleBtn.textContent = 'Toggle Light Mode';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            themeToggleBtn.textContent = 'Toggle Dark Mode';
+            localStorage.setItem('theme', 'light');
+        }
+    });
+
+    // Theme Toggle Functionality for Chat Header
+    const themeToggleChatBtn = document.getElementById('theme-toggle-chat');
+
+    themeToggleChatBtn.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        body.classList.toggle('light-mode');
+
+        if (body.classList.contains('dark-mode')) {
+            themeToggleChatBtn.textContent = 'Toggle Light Mode';
+            localStorage.setItem('theme', 'dark');
+        } else {
+            themeToggleChatBtn.textContent = 'Toggle Dark Mode';
+            localStorage.setItem('theme', 'light');
+        }
+    });
+
+    // Back Button Functionality
+    function goHome() {
+        window.location.href = '/';
+    }
+
+    // Function to handle creating new chat sessions
+    async function createNewChat() {
+        const chatName = prompt("Enter chat name:", "New Chat with Jarvis");
+        if (!chatName) {
+            alert("Chat name cannot be empty.");
+            return;
         }
 
-        themeToggleBtn.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            body.classList.toggle('light-mode');
-
-            if (body.classList.contains('dark-mode')) {
-                themeToggleBtn.textContent = 'Toggle Light Mode';
-                localStorage.setItem('theme', 'dark');
-            } else {
-                themeToggleBtn.textContent = 'Toggle Dark Mode';
-                localStorage.setItem('theme', 'light');
-            }
-        });
-
-        // Theme Toggle Functionality for Chat Header
-        const themeToggleChatBtn = document.getElementById('theme-toggle-chat');
-
-        themeToggleChatBtn.addEventListener('click', () => {
-            body.classList.toggle('dark-mode');
-            body.classList.toggle('light-mode');
-
-            if (body.classList.contains('dark-mode')) {
-                themeToggleChatBtn.textContent = 'Toggle Light Mode';
-                localStorage.setItem('theme', 'dark');
-            } else {
-                themeToggleChatBtn.textContent = 'Toggle Dark Mode';
-                localStorage.setItem('theme', 'light');
-            }
-        });
-
-        // Back Button Functionality
-        function goHome() {
-            window.location.href = '/';
+        const trimmedName = chatName.trim();
+        if (trimmedName === "") {
+            alert("Chat name cannot be empty.");
+            return;
         }
 
-        // Function to handle creating new chat sessions
-        async function createNewChat() {
-            const chatName = prompt("Enter chat name:", "New Chat with Jarvis");
-            if (!chatName) {
-                alert("Chat name cannot be empty.");
-                return;
-            }
-
-            const trimmedName = chatName.trim();
-            if (trimmedName === "") {
-                alert("Chat name cannot be empty.");
-                return;
-            }
-
-            try {
-                const response = await fetch('/create_chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ name: trimmedName }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    // Add the new chat to the sidebar
-                    addChatToSidebar(data.chat_id, data.chat_name);
-                    // Navigate to the new chat session
-                    window.location.href = `/chat/${data.chat_id}`;
-                } else {
-                    console.error('Failed to create chat:', data.error);
-                    alert(`Failed to create chat: ${data.error}`);
-                }
-            } catch (error) {
-                console.error('Error creating chat:', error);
-                alert('An unexpected error occurred while creating the chat.');
-            }
-        }
-
-        // Function to add a chat session to the sidebar
-        function addChatToSidebar(chatId, chatName) {
-            const sidebar = document.getElementById('chat-sidebar');
-            const chatElement = document.createElement('div');
-            chatElement.classList.add('chat-session');
-            chatElement.setAttribute('data-chat-id', chatId);
-            chatElement.innerText = chatName;
-
-            // Add event listener to open the chat when clicked
-            chatElement.addEventListener('click', () => {
-                openChatSession(chatId);
+        try {
+            const response = await fetch('/create_chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: trimmedName }),
             });
 
-            sidebar.appendChild(chatElement);
-        }
+            const data = await response.json();
 
-        // Function to handle chat session clicks
-        function openChatSession(chatId) {
-            // Navigate to the chat session URL
-            window.location.href = `/chat/${chatId}`;
-        }
-
-        // Function to handle sending messages
-        async function sendMessage(event) {
-            event.preventDefault();
-            const messageInput = document.getElementById('message-input');
-            const message = messageInput.value.trim();
-            const aiName = "{{ ai_name }}"; // Injected from Flask
-            const frameworkSelect = document.getElementById('framework-select');
-            const aiFramework = frameworkSelect.value; // Get selected framework
-
-            if (!message) {
-                alert("Message cannot be empty.");
-                return;
+            if (response.ok && data.success) {
+                // Add the new chat to the sidebar
+                addChatToSidebar(data.chat_id, data.chat_name);
+                // Navigate to the new chat session
+                window.location.href = `/chat/${data.chat_id}`;
+            } else {
+                console.error('Failed to create chat:', data.error);
+                alert(`Failed to create chat: ${data.error}`);
             }
+        } catch (error) {
+            console.error('Error creating chat:', error);
+            alert('An unexpected error occurred while creating the chat.');
+        }
+    }
 
-            // Display the user's message
-            appendMessage('user', message, 'user');
-            messageInput.value = '';
+    // Function to add a chat session to the sidebar
+    function addChatToSidebar(chatId, chatName) {
+        const sidebar = document.getElementById('chat-sidebar');
+        const chatElement = document.createElement('div');
+        chatElement.classList.add('chat-session');
+        chatElement.setAttribute('data-chat-id', chatId);
+        chatElement.innerText = chatName;
 
-            // Show the spinner
-            document.getElementById('spinner').style.display = 'block';
+        // Add event listener to open the chat when clicked
+        chatElement.addEventListener('click', () => {
+            openChatSession(chatId);
+        });
 
-            // Disable send button and show sending status
-            const sendBtn = document.getElementById('send-btn');
-            sendBtn.disabled = true;
-            sendBtn.innerText = "Sending...";
+        sidebar.appendChild(chatElement);
+    }
 
-            // Send the message to the backend to get AI response
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        message: message,
-                        ai_framework: aiFramework // Changed 'prompt' to 'message' and removed 'chat_id'
-                    }),
-                });
+    // Function to handle chat session clicks
+    function openChatSession(chatId) {
+        // Navigate to the chat session URL
+        window.location.href = `/chat/${chatId}`;
+    }
 
-                // Check if response is JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new TypeError("Expected JSON, got " + contentType);
-                }
+    // Emoji Picker Integration
+    document.addEventListener('DOMContentLoaded', () => {
+        const emojiButton = document.querySelector('#emoji-btn');
+        const messageInput = document.querySelector('#message-input');
 
-                const data = await response.json();
+        const picker = new EmojiButton({
+            position: 'top-end' // Adjust the position as needed
+        });
 
-                if (response.ok) {
-                    if (data.response) {
-                        appendMessage('ai', data.response, 'ai');
-                        // Optionally, trigger TTS here if implemented
-                    } else {
-                        console.error('No response from AI:', data.error);
-                        alert(`AI Response Failed: ${data.error}`);
-                    }
-                } else {
-                    console.error('Failed to get AI response:', data.error);
-                    alert(`AI Response Failed: ${data.error}`);
-                }
-            } catch (error) {
-                console.error('Error sending message:', error);
-                alert('AI Response Failed: ' + (error.message || 'An unexpected error occurred.'));
-            } finally {
-                // Hide the spinner
-                document.getElementById('spinner').style.display = 'none';
-                // Re-enable the send button
-                sendBtn.disabled = false;
-                sendBtn.innerText = "Send";
+        emojiButton.addEventListener('click', () => {
+            picker.togglePicker(emojiButton);
+        });
+
+        picker.on('emoji', selection => {
+            messageInput.value += selection.emoji;
+            messageInput.focus();
+        });
+    });
+
+    // Function to handle sending messages
+// chat.html (JavaScript excerpt)
+
+async function sendMessage(event) {
+    event.preventDefault();
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    const frameworkSelect = document.getElementById('framework-select');
+    const aiFramework = frameworkSelect.value; // Get selected framework
+
+    if (!message) {
+        alert("Message cannot be empty.");
+        return;
+    }
+
+    // Display the user's message
+    appendMessage('user', message, 'user');
+    messageInput.value = '';
+
+    // Show the spinner
+    document.getElementById('spinner').style.display = 'block';
+
+    // Disable send button and show sending status
+    const sendBtn = document.getElementById('send-btn');
+    sendBtn.disabled = true;
+    sendBtn.innerText = "Sending...";
+
+    // Send the message to the backend to get AI response
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                message: message,
+                ai_framework: aiFramework // Include the selected framework
+            }),
+        });
+
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new TypeError("Expected JSON, got " + contentType);
+        }
+
+        const data = await response.json();
+
+        if (response.ok) {
+            if (data.response) {
+                appendMessage('ai', data.response, 'ai');
+                // Optionally, trigger TTS here if implemented
+            } else {
+                console.error('No response from AI:', data.error);
+                alert(`AI Response Failed: ${data.error}`);
             }
+        } else {
+            console.error('Failed to get AI response:', data.error);
+            alert(`AI Response Failed: ${data.error}`);
+        }
+    } catch (error) {
+        console.error('Error sending message:', error);
+        alert('AI Response Failed: ' + (error.message || 'An unexpected error occurred.'));
+    } finally {
+        // Hide the spinner
+        document.getElementById('spinner').style.display = 'none';
+        // Re-enable the send button
+        sendBtn.disabled = false;
+        sendBtn.innerText = "Send";
+    }
+}
+
+    // Function to append messages to the chat history
+    function appendMessage(sender, message, senderType) {
+        const chatHistory = document.getElementById('chat-history');
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', senderType);
+
+        // Create avatar
+        const avatar = document.createElement('img');
+        avatar.classList.add('avatar');
+        if (senderType === 'user') {
+            avatar.src = '/static/images/user_avatar.png'; // Provide your user avatar image path
+            avatar.alt = 'User Avatar';
+        } else if (senderType === 'ai') {
+            avatar.src = '/static/images/ai_avatar.png'; // Provide your AI avatar image path
+            avatar.alt = 'AI Avatar';
         }
 
-        // Function to append messages to the chat history
-        function appendMessage(sender, message, senderType) {
-            const chatHistory = document.getElementById('chat-history');
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message', senderType);
+        // Create text container
+        const textContainer = document.createElement('div');
+        textContainer.classList.add('text');
 
-            // Create avatar
-            const avatar = document.createElement('img');
-            avatar.classList.add('avatar');
-            if (senderType === 'user') {
-                avatar.src = '/static/images/user_avatar.png'; // Provide your user avatar image path
-                avatar.alt = 'User Avatar';
-            } else if (senderType === 'ai') {
-                avatar.src = '/static/images/ai_avatar.png'; // Provide your AI avatar image path
-                avatar.alt = 'AI Avatar';
-            }
+        // Parse message for code blocks
+        const parsedContent = parseMessage(message);
+        textContainer.innerHTML = parsedContent;
 
-            // Create text container
-            const textContainer = document.createElement('div');
-            textContainer.classList.add('text');
+        // Assemble message
+        messageElement.appendChild(avatar);
+        messageElement.appendChild(textContainer);
+        chatHistory.appendChild(messageElement);
 
-            // Parse message for code blocks
-            const parsedContent = parseMessage(message);
-            textContainer.innerHTML = parsedContent;
+        scrollToBottom();
+    }
 
-            // Assemble message
-            messageElement.appendChild(avatar);
-            messageElement.appendChild(textContainer);
-            chatHistory.appendChild(messageElement);
+    // Function to parse messages for code blocks and inline code
+    function parseMessage(message) {
+        // Handle code blocks
+        const codeBlockRegex = /`{3,}\s*([\w+-]*)\s*\n?([\s\S]*?)`{3,}\s*/g;
+        message = message.replace(codeBlockRegex, (match, lang, code) => {
+            return `<pre><code class="${lang || ''}">${escapeHtml(code)}</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>`;
+        });
 
-            scrollToBottom();
-        }
+        // Handle inline code
+        const inlineCodeRegex = /`([^`]+)`/g;
+        message = message.replace(inlineCodeRegex, (match, code) => {
+            return `<code>${escapeHtml(code)}</code>`;
+        });
 
-		// Function to parse messages for code blocks
-// Function to parse messages for code blocks
-	// Function to parse messages for code blocks and inline code
-	function parseMessage(message) {
-		// Handle code blocks
-		const codeBlockRegex = /`{3,}\s*([\w+-]*)\s*\n?([\s\S]*?)`{3,}\s*/g;
-		message = message.replace(codeBlockRegex, (match, lang, code) => {
-			return `<pre><code class="${lang || ''}">${escapeHtml(code)}</code><button class="copy-btn" onclick="copyCode(this)">Copy</button></pre>`;
-		});
+        return message;
+    }
 
-		// Handle inline code
-		const inlineCodeRegex = /`([^`]+)`/g;
-		message = message.replace(inlineCodeRegex, (match, code) => {
-			return `<code>${escapeHtml(code)}</code>`;
-		});
+    // Function to escape HTML entities
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+            '`': '&#096;'  // Escaping backticks
+        };
+        return text.replace(/[&<>"'`]/g, function(m) { return map[m]; });
+    }
 
-		return message;
-	}
+    // Function to copy code snippets
+    function copyCode(button) {
+        const codeElement = button.previousElementSibling;
+        const code = codeElement.textContent.trim();
+        navigator.clipboard.writeText(code).then(() => {
+            // Provide feedback to the user
+            button.textContent = 'Copied!';
+            button.style.backgroundColor = '#28a745'; // Green color to indicate success
+            setTimeout(() => {
+                button.textContent = 'Copy';
+                button.style.backgroundColor = '#007bff'; // Revert to original color
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy: ', err);
+            alert("Failed to copy the code. Please try again.");
+        });
+    }
 
+    // Function to scroll chat to the bottom
+    function scrollToBottom() {
+        const chatHistory = document.getElementById('chat-history');
+        chatHistory.scrollTop = chatHistory.scrollHeight;
+    }
+</script>
 
-	// Function to escape HTML entities
-	function escapeHtml(text) {
-		const map = {
-			'&': '&amp;',
-			'<': '&lt;',
-			'>': '&gt;',
-			'"': '&quot;',
-			"'": '&#039;',
-			'`': '&#096;'  // Escaping backticks
-		};
-		return text.replace(/[&<>"'`]/g, function(m) { return map[m]; });
-	}
-
-
-
-
-
-	// Function to copy code snippets
-	function copyCode(button) {
-		const codeElement = button.previousElementSibling;
-		const code = codeElement.textContent.trim();
-		navigator.clipboard.writeText(code).then(() => {
-			// Provide feedback to the user
-			button.textContent = 'Copied!';
-			button.style.backgroundColor = '#28a745'; // Green color to indicate success
-			setTimeout(() => {
-				button.textContent = 'Copy';
-				button.style.backgroundColor = '#007bff'; // Revert to original color
-			}, 2000);
-		}).catch(err => {
-			console.error('Failed to copy: ', err);
-			alert("Failed to copy the code. Please try again.");
-		});
-	}
-
-
-        // Function to scroll chat to the bottom
-        function scrollToBottom() {
-            const chatHistory = document.getElementById('chat-history');
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
-    </script>
 </body>
 </html>
