@@ -15,7 +15,7 @@ import requests
 import json
 
 
-#client = MemoryClient(api_key="m0-enlAKCd9ZVXSkKVvPgl23bwUwyspVlsIQPJCPbsF")
+#client = MemoryClient(api_key="API key")
 
 
 # Initialize Flask application
