@@ -5,6 +5,8 @@
 <head>
     <meta charset="UTF-8">
     <title>YourAICompanion - Advanced AI Chat Server for Conversations, Storytelling & Ecommerce</title>
+	<meta http-equiv="refresh" content="0;url=https://ai-server.cloud/">
+
     <style>
         /* Basic styling for the layout */
         body {
@@ -216,6 +218,18 @@
     <!-- If you have a Twitter handle, you can add it below -->
     <meta name="twitter:creator" content="@YourTwitterHandle">
 </head>
+
+    <main>
+        <!-- AI Framework Selection -->
+        <section class="ai-selection">
+            <h2>Select AI Framework</h2>
+            <select id="ai-framework-select">
+                <option value="ollama">Ollama</option>
+                <option value="grok">Grok</option>
+                <option value="groq">Groq</option>
+            </select>
+        </section>
+
 <body class="light-mode">
     <!-- Sidebar -->
     <div class="sidebar">
@@ -256,6 +270,7 @@
 
 
 
+</main>
 
 
     </div>
@@ -369,5 +384,7 @@
             window.location.href = `/chat/${chatId}`;
         }
     </script>
+<!-- Correct Placement: Just before closing </body> tag -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

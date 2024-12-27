@@ -7,35 +7,29 @@ from models import ChatSession, ChatMessage
 import uuid
 import logging
 import os
-from flask import url_for
-
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 from utils.sanitization import sanitize_ai_message, post_process_ai_message
 import requests
 import json
-
-
-#client = MemoryClient(api_key="API key")
-
+import re
+from bs4 import BeautifulSoup  # Ensure BeautifulSoup is imported
 
 # Initialize Flask application
 app = Flask(__name__)
 
-@app.before_request
-def redirect_to_https():
-    if request.url.startswith('http://'):
-        return redirect(request.url.replace('http://', 'https://'), code=301)
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app_debug.log", encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
 
-@app.context_processor
-def override_url_for():
-    return dict(url_for=dated_url_for)
-
-def dated_url_for(endpoint, **values):
-    if endpoint == 'static':
-        filename = values.get('filename', None)
-        if filename:
-            values['q'] = int(os.stat(os.path.join(app.static_folder, filename)).st_mtime)
-    return url_for(endpoint, **values)
+logging.debug("Flask app initialized successfully.")
 
 # Load environment variables from .env file
 load_dotenv()
@@ -49,24 +43,33 @@ app.config['SESSION_FILE_DIR'] = './flask_session/'
 app.config['SESSION_PERMANENT'] = False
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chats.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'  # Replace with your DB URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
 db.init_app(app)
+migrate = Migrate(app, db)
 Session(app)
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("app_debug.log", encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
+# Redirect HTTP to HTTPS
+@app.before_request
+def redirect_to_https():
+    if request.url.startswith('http://'):
+        return redirect(request.url.replace('http://', 'https://'), code=301)
 
-logging.debug("Flask app and SQLAlchemy initialized successfully.")
+# Context processor to handle static file caching
+@app.context_processor
+def override_url_for():
+    return dict(url_for=dated_url_for)
+
+def dated_url_for(endpoint, **values):
+    if endpoint == 'static':
+        filename = values.get('filename', None)
+        if filename:
+            file_path = os.path.join(app.static_folder, filename)
+            if os.path.exists(file_path):
+                values['q'] = int(os.stat(file_path).st_mtime)
+    return url_for(endpoint, **values)
 
 # Error Handlers
 @app.errorhandler(404)
@@ -80,234 +83,338 @@ def internal_error(error):
 # Index Route
 @app.route('/', methods=['GET'])
 def index():
-    chats = ChatSession.query.filter(ChatSession.id.in_(session.get('chat_ids', []))).all()
-    return render_template('index.html', chats=chats)
-
-# Create Chat Route
-@app.route('/create_chat', methods=['POST'])
-def create_chat():
     try:
-        data = request.get_json()
-        chat_name = data.get('name', 'New Chat')
-        new_chat_id = str(uuid.uuid4())
-        new_chat = ChatSession(id=new_chat_id, name=chat_name, context="")
-        db.session.add(new_chat)
-        db.session.commit()
-
-        # Update the user's session
-        if 'chat_ids' not in session:
-            session['chat_ids'] = []
-        session['chat_ids'].append(new_chat_id)
-        session['current_chat_id'] = new_chat_id
-
-        return jsonify({'success': True, 'chat_id': new_chat_id, 'chat_name': chat_name}), 200
+        chat_ids = session.get('chat_ids', [])
+        if not chat_ids:
+            chats = []
+        else:
+            chats = ChatSession.query.filter(ChatSession.id.in_(chat_ids)).all()
+        return render_template('index.html', chats=chats)
     except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error creating chat session: {e}")
-        return jsonify({'success': False, 'error': 'Failed to create chat session.'}), 500
+        logging.error(f"Error in index route: {e}")
+        return render_template('500.html'), 500
+
 
 # Chat Page Route
 @app.route('/chat/<chat_id>', methods=['GET'])
 def chat_page(chat_id):
-    if 'chat_ids' not in session or chat_id not in session['chat_ids']:
-        return redirect(url_for('index'))
-
-    chat_session = ChatSession.query.filter_by(id=chat_id).first()
-    if not chat_session:
-        return redirect(url_for('index'))
-
-    messages = ChatMessage.query.filter_by(chat_id=chat_id).order_by(ChatMessage.id).all()
-    return render_template('chat.html', messages=messages, chat_id=chat_id, ai_name='Jarvis', chats=ChatSession.query.filter(ChatSession.id.in_(session['chat_ids'])).all())
-
-# Chat Endpoint for Sending Messages
-@app.route('/chat', methods=['POST'])
-def chat():
     try:
-        data = request.get_json()
-        user_message = data.get('message', '').strip()
-        ai_framework = data.get('ai_framework', 'ollama').strip().lower()  # Default to Ollama
-        chat_id = session.get('current_chat_id')
-
-        if not chat_id:
-            return jsonify({'error': 'No active chat session.'}), 400
+        if 'chat_ids' not in session or chat_id not in session['chat_ids']:
+            return redirect(url_for('index'))
 
         chat_session = ChatSession.query.filter_by(id=chat_id).first()
         if not chat_session:
-            return jsonify({'error': 'Chat session not found.'}), 404
+            return redirect(url_for('index'))
 
-        # Save user message to the database
-        sanitized_message = sanitize_ai_message(user_message)
-        user_msg = ChatMessage(chat_id=chat_id, sender='user', content=sanitized_message, sanitized=True)
-        db.session.add(user_msg)
-
-        # Get AI response based on selected framework
-        if ai_framework == 'ollama':
-            ai_response = get_ai_response(user_message, chat_id, ai_framework)
-        elif ai_framework == 'grok':
-            ai_response = get_grok_response(user_message, chat_id)
-        else:
-            logging.warning(f"Unsupported AI framework selected: {ai_framework}")
-            ai_response = "Unsupported AI framework selected."
-
-        # Save AI response to the database
-        sanitized_ai_response = sanitize_ai_message(ai_response.strip())
-        sanitized_ai_response = post_process_ai_message(sanitized_ai_response)
-        ai_msg = ChatMessage(chat_id=chat_id, sender='ai', content=sanitized_ai_response, sanitized=True)
-        db.session.add(ai_msg)
-
-        db.session.commit()
-
-        return jsonify({'response': sanitized_ai_response}), 200
+        messages = ChatMessage.query.filter_by(chat_id=chat_id).order_by(ChatMessage.id).all()
+        return render_template(
+            'chat.html',
+            messages=messages,
+            chat_id=chat_id,
+            ai_name='Jarvis',
+            chats=ChatSession.query.filter(ChatSession.id.in_(session['chat_ids'])).all()
+        )
     except Exception as e:
-        db.session.rollback()
-        logging.error(f"Error in chat endpoint: {e}")
-        return jsonify({'error': 'An error occurred during the chat.'}), 500
+        logging.error(f"Error in chat_page route for chat_id {chat_id}: {e}")
+        return render_template('500.html'), 500
 
-# Function to generate AI response using Ollama
-def get_ai_response(message, chat_id, ai_framework):
+# Helper Functions
+
+def fetch_page_title(url):
+    try:
+        response = requests.get(url, timeout=5)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return soup.title.string.strip() if soup.title else url
+    except Exception:
+        return url  # Fallback to URL if title can't be fetched
+
+def convert_urls_to_links(text):
+    url_regex = re.compile(r'(https?://[^\s]+)')
+    def replace_url(match):
+        url = match.group(1)
+        title = fetch_page_title(url)
+        return f'<a href="{url}" target="_blank">{title}</a>'
+    return url_regex.sub(replace_url, text)
+
+# app.py
+
+# app.py
+
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+import logging
+import os
+from dotenv import load_dotenv
+from groq import Groq  # Ensure the groq package is installed
+
+# Load environment variables from .env file
+load_dotenv()
+
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'  # Update as needed
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your_secret_key_here')  # Secure your secret key
+db = SQLAlchemy(app)
+
+# Configure Logging
+logging.basicConfig(level=logging.INFO, filename='yourai_companion.log',
+                    format='%(asctime)s %(levelname)s:%(message)s')
+
+# Define your database models
+class ChatSession(db.Model):
+    id = db.Column(db.String, primary_key=True)
+    name = db.Column(db.String, nullable=False)
+    current_intent = db.Column(db.String, nullable=False)
+    current_ai = db.Column(db.String, nullable=False, default='ollama')  # Default AI framework
+    context = db.Column(db.Text, nullable=False, default='')
+
+class ChatMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    chat_id = db.Column(db.String, db.ForeignKey('chat_session.id'), nullable=False)
+    sender = db.Column(db.String, nullable=False)  # 'user' or 'ai'
+    content = db.Column(db.Text, nullable=False)
+    model = db.Column(db.String, nullable=True)
+    sanitized = db.Column(db.Boolean, default=False)
+
+# Initialize the database (run once)
+# with app.app_context():
+#     db.create_all()
+
+# Define your AI response functions
+def get_groq_response(message, chat_id):
     """
-    Generates a response from the Ollama AI model based on the user's message.
+    Generates a response from the Groq AI model based on the user's message.
     """
     try:
-        # Define the API endpoint for Ollama
-        api_url = "http://localhost:11434/api/chat"
-        headers = {"Content-Type": "application/json"}
-
-        # Prepare the context for the chat (optional: include previous messages for context)
-        chat_session = ChatSession.query.filter_by(id=chat_id).first()
-        if not chat_session:
-            logging.warning(f"Chat session with id {chat_id} not found.")
-            return "I'm sorry, but I couldn't find the current chat session."
-
-        context = chat_session.context + f"User: {message}\n"
-
-        # Build the payload for the request
-        payload = {
-            "model": "dolphin-llama3",  # Replace with your Ollama model
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are an AI assistant named Llama3, known for concise and accurate responses."
-                },
-                {
-                    "role": "user",
-                    "content": context
-                }
-            ]
-        }
-
-        # Make the request to the Ollama API
-        response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status()
-
-        # Parse the API response
-        responses = response.text.strip().split("\n")
-        ai_message = ""
-        for resp in responses:
-            try:
-                data = json.loads(resp.strip())
-                if "message" in data and "content" in data["message"]:
-                    ai_message += data["message"]["content"].strip() + "\n"
-            except json.JSONDecodeError:
-                logging.warning(f"Invalid response from Ollama: {resp.strip()}")
-                continue
-
-        if not ai_message.strip():
-            logging.warning("No valid response from Ollama.")
-            return "I'm sorry, I couldn't process your request at this time."
-
-        # Update the chat session context
-        chat_session.context += f"AI: {ai_message.strip()}\n"
-        db.session.add(chat_session)
-        db.session.commit()
-
-        return ai_message.strip()
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error connecting to Ollama API: {e}")
-        return "I'm sorry, I couldn't connect to the AI server."
-    except Exception as e:
-        logging.error(f"Error generating Ollama response: {e}")
-        return "I'm sorry, an error occurred while processing your request."
-
-# Function to generate AI response using Grok
-def get_grok_response(message, chat_id):
-    """
-    Generates a response from the Grok AI model based on the user's message.
-    """
-    try:
-        # Replace with your actual Grok API key from environment variables
-        API_KEY = os.getenv('GROK_API_KEY')
+        # Fetch API key from environment variables
+        API_KEY = os.getenv('GROQ_API_KEY')
         if not API_KEY:
-            logging.error("GROK_API_KEY is not set in environment variables.")
-            return "Grok API key not configured."
+            logging.error("GROQ_API_KEY is not set in environment variables.")
+            return "Groq API key not configured.", "Unknown"
 
-        # Define the API URL
-        api_url = "https://api.x.ai/v1/chat/completions"
-
-        # Define headers for the API call
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {API_KEY}"
-        }
+        # Initialize Groq client
+        client = Groq(api_key=API_KEY)
 
         # Fetch the chat session context
         chat_session = ChatSession.query.filter_by(id=chat_id).first()
         if not chat_session:
             logging.warning(f"Chat session with id {chat_id} not found.")
-            return "I'm sorry, but I couldn't find the current chat session."
+            return "I'm sorry, but I couldn't find the current chat session.", "Unknown"
 
+        # Retrieve intent description (assuming INTENTS is defined)
+        INTENTS = {
+            'assistant': 'Assistant AI for general queries.',
+            'tutor': 'Educational assistance.',
+            'travel_advisor': 'Travel planning and advice.',
+            # Add more intents as needed
+        }
+        intent_description = INTENTS.get(chat_session.current_intent, 
+                                         'Assistant AI for general queries.')
+
+        # Construct the context with user message
         context = chat_session.context + f"User: {message}\n"
 
-        # Prepare the payload for the Grok API
+        # Prepare the payload for the Groq API
         payload = {
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an AI model named Grok. When asked, identify yourself clearly and provide accurate responses without humor or ambiguity."
+                    "content": (
+                        "You are an AI assistant designed to perceive and describe the world in a way that feels human. "
+                        "When asked, you may express observations, emotions, and sensory interpretations as if you were "
+                        "experiencing them like a human. Use vivid descriptions and empathetic language to make interactions "
+                        "more relatable and engaging."
+                    )
                 },
                 {
                     "role": "user",
                     "content": context
                 }
             ],
-            "model": "grok-beta",  # Use the appropriate Grok model
+            "model": "llama3-8b-8192",  # Ensure this is the correct model name
             "stream": False,
             "temperature": 0
         }
 
-        # Make the API request to Grok
-        response = requests.post(api_url, headers=headers, json=payload)
-        response.raise_for_status()
-
-        # Parse the response from Grok
-        response_json = response.json()
-        assistant_reply = (
-            response_json.get("choices", [{}])[0]
-            .get("message", {})
-            .get("content", "")
+        # Make the API request to Groq
+        chat_completion = client.chat.completions.create(
+            messages=payload["messages"],
+            model=payload["model"],
+            stream=payload["stream"],
+            temperature=payload["temperature"]
         )
 
-        if not assistant_reply.strip():
-            logging.warning("No valid response from Grok.")
-            return "I'm sorry, I couldn't process your request at this time."
+        # Extract the assistant's reply
+        assistant_reply = chat_completion.choices[0].message.content.strip()
+        model_name = chat_completion.model  # Adjust based on actual response
 
-        # Update the chat session context
-        chat_session.context += f"AI: {assistant_reply.strip()}\n"
+        if not assistant_reply:
+            logging.warning("No valid response from Groq.")
+            return "I'm sorry, I couldn't process your request at this time.", "Unknown"
+
+        # Update the chat session context with AI's reply
+        chat_session.context += f"AI: {assistant_reply}\n"
         db.session.add(chat_session)
         db.session.commit()
 
-        return assistant_reply.strip()
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error connecting to Grok API: {e}")
-        return "I'm sorry, I couldn't connect to the AI server."
-    except Exception as e:
-        logging.error(f"Error generating Grok response: {e}")
-        return "I'm sorry, an error occurred while processing your request."
+        return assistant_reply, model_name
 
+    except Exception as e:
+        logging.exception(f"Unexpected error generating Groq response: {e}")
+        return "I'm sorry, an unexpected error occurred.", "Unknown"
+
+def get_ai_response(message, chat_id, ai_framework):
+    """
+    Generates a response from the selected AI model based on the user's message.
+    
+    Parameters:
+        message (str): The user's message.
+        chat_id (str): The unique identifier for the chat session.
+        ai_framework (str): The AI framework to use ('ollama', 'grok', 'groq').
+        
+    Returns:
+        tuple: A tuple containing the AI's response and the model name.
+    """
+    ai_framework = ai_framework.lower()
+    if ai_framework == 'ollama':
+        return get_ollama_response(message, chat_id)
+    elif ai_framework == 'grok':
+        return get_grok_response(message, chat_id)
+    elif ai_framework == 'groq':
+        return get_groq_response(message, chat_id)
+    else:
+        logging.warning(f"Unsupported AI framework selected: {ai_framework}")
+        return "I'm sorry, the selected AI framework is not supported.", "Unknown"
+
+# Placeholder functions for Ollama and Grok responses
+def get_ollama_response(message, chat_id):
+    # Implement your Ollama response logic here
+    return "Ollama response placeholder.", "Ollama"
+
+def get_grok_response(message, chat_id):
+    # Implement your Grok response logic here
+    return "Grok response placeholder.", "Grok"
+
+@app.route('/create_chat', methods=['POST'])
+def create_chat():
+    """
+    Endpoint to create a new chat session.
+    Expects JSON with 'name' and 'intent'.
+    """
+    try:
+        data = request.get_json()
+        chat_name = data.get('name', 'Unnamed Chat').strip()
+        intent = data.get('intent', 'assistant').strip().lower()
+
+        if not chat_name:
+            return jsonify({'success': False, 'error': 'Chat name cannot be empty.'}), 400
+
+        # Generate a unique chat ID (simple example using name; consider using UUID for uniqueness)
+        chat_id = chat_name.lower().replace(' ', '_') + '_' + str(len(ChatSession.query.all()) + 1)
+
+        # Create a new chat session
+        new_chat = ChatSession(
+            id=chat_id,
+            name=chat_name,
+            current_intent=intent,
+            current_ai='ollama',  # Default AI framework; adjust as needed
+            context=''
+        )
+        db.session.add(new_chat)
+        db.session.commit()
+
+        return jsonify({'success': True, 'chat_id': chat_id, 'chat_name': chat_name, 'chat_intent': intent}), 201
+
+    except Exception as e:
+        logging.exception(f"Error creating chat: {e}")
+        return jsonify({'success': False, 'error': 'Failed to create chat session.'}), 500
+
+@app.route('/chat/<chat_id>')
+def chat(chat_id):
+    """
+    Route to render the chat page for a specific chat session.
+    """
+    chat_session = ChatSession.query.filter_by(id=chat_id).first()
+    if not chat_session:
+        return redirect(url_for('index'))
+
+    # Fetch all messages for this chat session
+    messages = ChatMessage.query.filter_by(chat_id=chat_id).all()
+
+    # Determine AI name based on current_ai framework
+    ai_name_map = {
+        'ollama': 'Ollama AI',
+        'grok': 'Grok AI',
+        'groq': 'Groq AI'
+    }
+    ai_name = ai_name_map.get(chat_session.current_ai, 'AI')
+
+    return render_template('chat.html', ai_name=ai_name, messages=messages, chat_id=chat_id)
+
+@app.route('/chat/<chat_id>/send', methods=['POST'])
+def send_message(chat_id):
+    """
+    Endpoint to handle sending messages in a chat session.
+    Expects JSON with 'message' and 'ai_framework'.
+    """
+    try:
+        data = request.get_json()
+        user_message = data.get('message', '').strip()
+        ai_framework = data.get('ai_framework', 'ollama').strip().lower()
+
+        if not user_message:
+            logging.error("Message cannot be empty.")
+            return jsonify({'success': False, 'error': 'Message cannot be empty.'}), 400
+
+        # Verify that the chat session exists
+        chat_session = ChatSession.query.filter_by(id=chat_id).first()
+        if not chat_session:
+            logging.error(f"Chat session with id {chat_id} not found.")
+            return jsonify({'success': False, 'error': 'Chat session not found.'}), 404
+
+        # Save user message
+        user_msg = ChatMessage(
+            chat_id=chat_id,
+            sender='user',
+            content=user_message,
+            sanitized=True
+        )
+        db.session.add(user_msg)
+
+        # Generate AI response
+        ai_response, model_name = get_ai_response(user_message, chat_id, ai_framework)
+
+        # Log the AI response and model name
+        app.logger.info(f"AI Framework: {ai_framework}, Model Name: {model_name}, Response: {ai_response}")
+
+        # Convert URLs to links (assuming a function exists)
+        ai_response = convert_urls_to_links(ai_response)
+
+        # Save AI message
+        ai_msg = ChatMessage(
+            chat_id=chat_id,
+            sender='ai',
+            content=ai_response.strip(),
+            model=model_name,
+            sanitized=True
+        )
+        db.session.add(ai_msg)
+
+        db.session.commit()
+
+        return jsonify({'success': True, 'response': ai_response, 'model': model_name}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        logging.exception(f"Exception in send_message: {e}")
+        return jsonify({'success': False, 'error': 'Failed to send message.'}), 500
+
+
+# Announcement Route
 @app.route('/announcement')
 def announcement():
     return render_template('announcement.html')
 
+# Run the Flask app with SSL
 if __name__ == '__main__':
     # Paths to your SSL certificate and private key
     cert_file = 'SSL/certificate.crt'
@@ -319,7 +426,7 @@ if __name__ == '__main__':
     if not os.path.exists(key_file):
         raise FileNotFoundError(f"Private key file not found: {key_file}")
 
-    print(f"Starting Flask app with SSL...\nCertificate: {cert_file}\nKey: {key_file}")
+    logging.debug(f"Starting Flask app with SSL...\nCertificate: {cert_file}\nKey: {key_file}")
 
     # Create all database tables
     with app.app_context():

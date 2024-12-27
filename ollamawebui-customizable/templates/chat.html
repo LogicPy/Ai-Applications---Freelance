@@ -1,4 +1,4 @@
-<!-- templates/chat.html -->
+<!-- templates/chat.html --> 
 
 <!DOCTYPE html>
 <html lang="en">
@@ -6,421 +6,97 @@
     <meta charset="UTF-8">
     <title>Chat with {{ ai_name }}</title>
     <style>
-        /* General Styles */
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            height: 100vh;
-            margin: 0;
-            transition: background-color 0.3s, color 0.3s;
+        /* Existing CSS ... */
+
+        /* Lower Label Styling */
+        .lower-label {
+            display: block;
+            margin-top: 5px;
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.6); /* Semi-transparent text */
+            font-style: italic;
         }
 
-        /* Light Theme */
-        body.light-mode {
-            background-color: #f8f9fa;
-            color: #212529;
-        }
-
-        /* Dark Theme */
-        body.dark-mode {
-            background-color: #121212;
-            color: #ffffff;
-        }
-
-        /* Sidebar Styles */
-        .sidebar {
-            width: 250px;
-            background-color: #343a40;
-            color: #fff;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        body.dark-mode .sidebar {
-            background-color: #1e1e1e;
-            color: #ffffff;
-        }
-
-        .sidebar h2 {
-            margin-top: 0;
-            font-family: "Orbitron", sans-serif;
-        }
-
-        .chat-session {
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #495057;
-            border: 1px solid #6c757d;
-            border-radius: 5px;
-            cursor: pointer;
-            font-family: "Orbitron", sans-serif;
-            transition: background-color 0.3s;
-        }
-
-        .chat-session:hover {
-            background-color: #6c757d;
-        }
-
-        /* Main Chat Container */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        /* Chat Header */
-        #chat-header {
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        #chat-header h1 {
-            font-family: "Orbitron", sans-serif;
-            color: #343a40;
-            transition: color 0.3s;
-        }
-
-        /* Chat History */
-        #chat-history {
-            flex: 1;
-            overflow-y: auto;
-            border: 1px solid #ced4da;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: #ffffff;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        body.dark-mode #chat-history {
-            background-color: #1e1e1e;
-            border: 1px solid #343a40;
-        }
-
-        .message {
-            display: flex;
-            margin-bottom: 10px;
-        }
-
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-
-        .text {
-            padding: 10px;
-            border-radius: 4px;
-            position: relative;
-            max-width: 70%;
-            word-wrap: break-word;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        body.dark-mode .text {
-            background-color: #343a40;
-            color: #ffffff;
-        }
-
-        .user .text {
-            background-color: #007bff;
-            color: #fff;
-            margin-left: auto;
-        }
-
-        .ai .text {
-            color: #000;
-        }
-
-        /* Input Area */
-        #input-area {
-            display: flex;
-            margin-top: 20px;
-        }
-
-        #input-area form {
-            display: flex;
-            width: 100%;
-        }
-
-        #input-area input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            margin-right: 10px;
-            font-size: 16px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        body.dark-mode #input-area input {
-            background-color: #343a40;
-            color: #ffffff;
-            border: 1px solid #495057;
-        }
-
-        #input-area select {
-            padding: 10px;
-            border: 1px solid #ced4da;
-            border-radius: 4px;
-            margin-right: 10px;
-            font-size: 16px;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        body.dark-mode #input-area select {
-            background-color: #343a40;
-            color: #ffffff;
-            border: 1px solid #495057;
-        }
-
-        #input-area button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            font-size: 16px;
-            margin-right: 5px;
-        }
-
-        #emoji-btn {
-            background-color: #f0f0f0;
-        }
-
-        #emoji-btn:hover {
-            background-color: #e0e0e0;
-        }
-
-        #speaker-btn {
-            background-color: #f0f0f0;
-        }
-
-        #speaker-btn:hover {
-            background-color: #e0e0e0;
-        }
-
-        #send-btn {
-            background-color: #007bff;
-            color: #fff;
-        }
-
-        #send-btn:hover {
-            background-color: #0069d9;
-        }
-
-        /* Loader Styles */
-        .loader {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #007bff;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: relative;
-            }
-            .main-content {
-                margin-top: 20px;
-            }
-        }
-        
-        /* Loading Spinner */
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 10px 0;
-        }
-
-        /* Spinner Styles */
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4CAF50;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* Dark Mode Adjustments */
+        body.dark-mode .lower-label {
+            color: rgba(255, 255, 255, 0.6);
         }
 		
-		.theme-toggle-btn {
-    cursor: pointer;
-    padding: 10px 20px;
-    background-color: #6c757d;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    transition: background-color 0.3s;
-}
-
-.theme-toggle-btn:hover {
-    background-color: #5a6268;
-}
-
-/* Code Block Styling */
-
-/* Code Block Styling */
-/* Code Block Styling */
-pre {
-    background-color: #f8f9fa; /* Adjust for dark mode */
-    padding: 10px;
-    border-radius: 4px;
-    overflow-x: auto;
-    margin: 10px 0;
-    white-space: pre-wrap; /* Preserves whitespace and allows wrapping */
-}
-
-pre code {
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    white-space: pre-wrap;
-    margin: 0;
-}
-
-/* Inline Code Styling */
-code {
-    background-color: #e9ecef;
-    padding: 2px 4px;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-}
-
-/* Dark Mode Adjustments */
-body.dark-mode pre {
-    background-color: #1e1e1e;
-    color: #ffffff;
-}
-
-body.dark-mode pre code {
-    color: #ffffff;
-}
-
+		.new-chat-btn{
+			background-color: #4a90e2 !important;
+		}
+		
     </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
-
-    <!-- Meta Tags for SEO and Social Media -->
-    <meta name="description" content="Engage in meaningful conversations with YourAICompanion, an advanced AI chat server. Whether you're seeking a friendly AI friend, exploring AI-driven storytelling, or enhancing your ecommerce platform with intelligent interactions, our versatile AI solutions cater to your unique needs.">
-    <meta name="keywords" content="AI chatbot, AI conversations, AI companionship, AI storytelling, intelligent chat server, virtual friend, AI relationships, story generator AI, AI ecommerce solutions, interactive AI, conversational AI">
-    <!-- Open Graph / Facebook -->
-    <meta property="og:title" content="YourAICompanion - Advanced AI Chat Server">
-    <meta property="og:description" content="Connect with YourAICompanion for intelligent conversations, AI-driven storytelling, and innovative ecommerce solutions. Experience the future of interactive AI today!">
-    <meta property="og:image" content="https://www.yourdomain.com/images/og-image.jpg">
-    <meta property="og:url" content="https://www.yourdomain.com/">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="YourAICompanion">
-    <!-- Twitter Card data -->
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="YourAICompanion - Advanced AI Chat Server">
-    <meta name="twitter:description" content="Engage with YourAICompanion for intelligent conversations, AI storytelling, and ecommerce enhancements. Discover the capabilities of our versatile AI chat server today!">
-    <meta name="twitter:image" content="https://www.yourdomain.com/images/twitter-image.jpg">
-    <meta name="twitter:url" content="https://www.yourdomain.com/">
-    <!-- If you have a Twitter handle, you can add it below -->
-    <meta name="twitter:creator" content="@YourTwitterHandle">
+    <!-- Existing Links and Scripts ... -->
 </head>
 <body class="light-mode">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <h2>Chat Sessions</h2>
-        <button class="chat-session" onclick="createNewChat()">New Chat</button>
-        <div id="chat-sidebar">
-            <!-- Chat sessions are rendered here via Flask's template rendering -->
-            {% for chat in chats %}
-                <div class="chat-session" onclick="openChatSession('{{ chat.id }}')">
-                    {{ chat.name }}
+    <!-- Existing Sidebar and Main Content ... -->
+
+    <!-- Main Chat Container -->
+    <div class="main-content">
+        <div id="chat-header">
+            <h1>Chat with {{ ai_name }}</h1>
+            <div>
+                <button class="theme-toggle-btn" id="theme-toggle-chat">Toggle Dark Mode</button>
+                <button class="theme-toggle-btn" id="back-btn" onclick="goHome()">Back</button>
+            </div>
+        </div>
+        <div id="chat-history">
+            <!-- Chat messages will appear here -->
+            {% for message in messages %}
+                <div class="message {{ message.sender }}">
+                    <img class="avatar" src="{{ url_for('static', filename='images/' + ('user_avatar.png' if message.sender == 'user' else 'ai_avatar.png')) }}" alt="{{ message.sender.capitalize() }} Avatar">
+                    <div class="text">
+                        {{ message.content | safe }}
+                        {% if message.audio_url %}
+                            <audio controls style="width: 100%; margin-top: 10px;">
+                                <source src="{{ message.audio_url }}" type="audio/mpeg">
+                                Your browser does not support the audio element.
+                            </audio>
+                        {% endif %}
+                        {% if message.sender == 'ai' and message.model %}
+                            <span class="lower-label">{{ message.model }}</span>
+                        {% endif %}
+                    </div>
                 </div>
             {% endfor %}
-        </div>
-        <!-- Theme Toggle Button -->
-        <button class="theme-toggle-btn" id="theme-toggle">Toggle Dark Mode</button>
-    </div>
-
-<!-- chat.html -->
-
-<!-- Main Chat Container -->
-<div class="main-content">
-    <div id="chat-header">
-        <h1>Chat with {{ ai_name }}</h1>
-        <div>
-            <button class="theme-toggle-btn" id="theme-toggle-chat">Toggle Dark Mode</button>
-            <button class="theme-toggle-btn" id="back-btn" onclick="goHome()">Back</button>
-        </div>
-    </div>
-    <div id="chat-history">
-        <!-- Chat messages will appear here -->
-        {% for message in messages %}
-            <div class="message {{ message.sender }}">
-                <img class="avatar" src="{{ url_for('static', filename='images/' + ('user_avatar.png' if message.sender == 'user' else 'ai_avatar.png')) }}" alt="{{ message.sender.capitalize() }} Avatar">
-                <div class="text">
-                    {{ message.content | safe }}
-                    {% if message.audio_url %}
-                        <audio controls style="width: 100%; margin-top: 10px;">
-                            <source src="{{ message.audio_url }}" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                        </audio>
-                    {% endif %}
-                </div>
+            <!-- Spinner Placeholder -->
+            <div id="spinner" style="display: none; text-align: center;">
+                <div class="spinner"></div>
             </div>
-        {% endfor %}
-        <!-- Spinner Placeholder -->
-        <div id="spinner" style="display: none; text-align: center;">
-            <div class="spinner"></div>
+        </div>
+        <div id="input-area">
+            <form id="message-form" onsubmit="sendMessage(event)">
+                <input type="text" id="message-input" placeholder="Type your message here..." required>
+                
+                <!-- Dropdown for AI Framework Selection -->
+                <select id="framework-select">
+                    <option value="ollama" selected>Ollama</option>
+                    <option value="grok">Grok</option> 
+                </select>
+                
+                <button type="button" id="emoji-btn">😊</button>
+                <button type="button" id="speaker-btn">🔊</button>
+                <button type="submit" id="send-btn">Send</button>
+                <button type="button" onclick="toggleSidebarB()">Open SidebarB</button>
+            </form>
+        </div>
+
+        <!-- Right Sidebar (sidebarB) -->
+        <div id="sidebarB" class="sidebarB">
+            <div class="sidebarB-header">
+                <h2>Relevant Information</h2>
+                <button onclick="toggleSidebarB()" class="close-btn">×</button>
+            </div>
+            <div id="sidebarB-content" class="sidebarB-content">
+                <!-- This will be dynamically populated -->
+            </div>
         </div>
     </div>
-  <div id="input-area">
-    <form id="message-form" onsubmit="sendMessage(event)">
-        <input type="text" id="message-input" placeholder="Type your message here..." required>
-        
-        <!-- Dropdown for AI Framework Selection -->
-        <select id="framework-select">
-            <option value="ollama" selected>Ollama</option>
-            <option value="grok">Grok</option> 
-        </select>
-        
-        <button type="button" id="emoji-btn">😊</button>
-        <button type="button" id="speaker-btn">🔊</button>
-        <button type="submit" id="send-btn">Send</button>
-    </form>
-</div>
 
-</div>
-
-<!-- Emoji Picker Library -->
-<script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
-<!-- Load the Emoji Picker Locally -->
-<script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
-<!-- Initialize Emoji Picker -->
     <!-- Emoji Picker Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4/dist/index.min.js"></script>
+    <!-- Initialize Emoji Picker -->
+   <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4/dist/index.min.js"></script>
 	<!-- Load the Emoji Picker Locally -->
 
     <script type="module">
@@ -445,8 +121,50 @@ body.dark-mode pre code {
         });
     </script>
 
-<!-- JavaScript for Theme Toggle, Emoji Picker, Back Button, and Chat Functionality -->
-<script>
+    <!-- JavaScript for Theme Toggle, Back Button, Chat Functionality, and SidebarB -->
+    <script>
+
+    // Function to toggle sidebarB visibility
+    function toggleSidebarB() {
+        const sidebarB = document.getElementById('sidebarB');
+        sidebarB.classList.toggle('active');
+    }
+
+    // Function to populate sidebarB with references
+    function populateSidebarB(references) {
+        const content = document.getElementById('sidebarB-content');
+        let newLinksAdded = false;
+
+        references.forEach(ref => {
+            // Check if the link already exists in the sidebar
+            const existingLinks = content.querySelectorAll('a');
+            const linkExists = Array.from(existingLinks).some(link => link.href === ref.url);
+
+            if (!linkExists) {
+                newLinksAdded = true;
+                const referenceItem = document.createElement('div');
+                referenceItem.classList.add('reference-item');
+
+                const title = document.createElement('h3');
+                title.textContent = ref.title;
+
+                const linkElement = document.createElement('a');
+                linkElement.href = ref.url;
+                linkElement.target = '_blank';
+                linkElement.textContent = 'Read More';
+
+                referenceItem.appendChild(title);
+                referenceItem.appendChild(linkElement);
+
+                content.appendChild(referenceItem);
+            }
+        });
+
+        if (newLinksAdded) {
+            toggleSidebarB(); // Automatically open the sidebar if new links are added
+        }
+    }
+
     // Theme Toggle Functionality for Sidebar
     const themeToggleBtn = document.getElementById('theme-toggle');
     const body = document.body;
@@ -554,28 +272,8 @@ body.dark-mode pre code {
         window.location.href = `/chat/${chatId}`;
     }
 
-    // Emoji Picker Integration
-    document.addEventListener('DOMContentLoaded', () => {
-        const emojiButton = document.querySelector('#emoji-btn');
-        const messageInput = document.querySelector('#message-input');
-
-        const picker = new EmojiButton({
-            position: 'top-end' // Adjust the position as needed
-        });
-
-        emojiButton.addEventListener('click', () => {
-            picker.togglePicker(emojiButton);
-        });
-
-        picker.on('emoji', selection => {
-            messageInput.value += selection.emoji;
-            messageInput.focus();
-        });
-    });
-
     // Function to handle sending messages
-// chat.html (JavaScript excerpt)
-
+// Function to handle sending messages
 async function sendMessage(event) {
     event.preventDefault();
     const messageInput = document.getElementById('message-input');
@@ -600,9 +298,12 @@ async function sendMessage(event) {
     sendBtn.disabled = true;
     sendBtn.innerText = "Sending...";
 
+    // Get the current chat_id from the URL or a global variable
+    const chatId = "{{ chat_id }}";  // Passed from Flask
+
     // Send the message to the backend to get AI response
     try {
-        const response = await fetch('/chat', {
+        const response = await fetch(`/chat/${chatId}/send`, {  // Ensure chat_id is defined
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -623,7 +324,9 @@ async function sendMessage(event) {
 
         if (response.ok) {
             if (data.response) {
-                appendMessage('ai', data.response, 'ai');
+                console.log("AI Response:", data.response);
+                console.log("AI Model:", data.model);
+                appendMessage('ai', data.response, 'ai', data.model); // Pass model name
                 // Optionally, trigger TTS here if implemented
             } else {
                 console.error('No response from AI:', data.error);
@@ -646,39 +349,55 @@ async function sendMessage(event) {
 }
 
     // Function to append messages to the chat history
-    function appendMessage(sender, message, senderType) {
-        const chatHistory = document.getElementById('chat-history');
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message', senderType);
+   // Function to append messages to the chat history
+function appendMessage(sender, message, senderType, modelName = null) {
+    console.log(`Appending message from: ${senderType}`);
+    console.log(`Message: ${message}`);
+    console.log(`Model Name: ${modelName}`);
+    const chatHistory = document.getElementById('chat-history');
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message', senderType);
 
-        // Create avatar
-        const avatar = document.createElement('img');
-        avatar.classList.add('avatar');
-        if (senderType === 'user') {
-            avatar.src = '/static/images/user_avatar.png'; // Provide your user avatar image path
-            avatar.alt = 'User Avatar';
-        } else if (senderType === 'ai') {
-            avatar.src = '/static/images/ai_avatar.png'; // Provide your AI avatar image path
-            avatar.alt = 'AI Avatar';
-        }
-
-        // Create text container
-        const textContainer = document.createElement('div');
-        textContainer.classList.add('text');
-
-        // Parse message for code blocks
-        const parsedContent = parseMessage(message);
-        textContainer.innerHTML = parsedContent;
-
-        // Assemble message
-        messageElement.appendChild(avatar);
-        messageElement.appendChild(textContainer);
-        chatHistory.appendChild(messageElement);
-
-        scrollToBottom();
+    // Create avatar
+    const avatar = document.createElement('img');
+    avatar.classList.add('avatar');
+    if (senderType === 'user') {
+        avatar.src = '/static/images/user_avatar.png'; // Provide your user avatar image path
+        avatar.alt = 'User Avatar';
+    } else if (senderType === 'ai') {
+        avatar.src = '/static/images/ai_avatar.png'; // Provide your AI avatar image path
+        avatar.alt = 'AI Avatar';
     }
 
-    // Function to parse messages for code blocks and inline code
+    // Create text container
+    const textContainer = document.createElement('div');
+    textContainer.classList.add('text');
+
+    // Parse message for code blocks and links
+    const parsedContent = parseMessage(message);
+    textContainer.innerHTML = parsedContent;
+
+    // If AI message and modelName is provided, add the label
+    if (senderType === 'ai' && modelName) {
+        const label = document.createElement('span');
+        label.classList.add('lower-label');
+        label.textContent = modelName;
+        textContainer.appendChild(label);
+    }
+
+    // Assemble message
+    messageElement.appendChild(avatar);
+    messageElement.appendChild(textContainer);
+    chatHistory.appendChild(messageElement);
+
+    // Extract and process links
+    extractLinksFromMessage(textContainer.innerHTML);
+
+    scrollToBottom();
+}
+
+
+    // Function to parse messages for code blocks and links
     function parseMessage(message) {
         // Handle code blocks
         const codeBlockRegex = /`{3,}\s*([\w+-]*)\s*\n?([\s\S]*?)`{3,}\s*/g;
@@ -693,6 +412,29 @@ async function sendMessage(event) {
         });
 
         return message;
+    }
+
+    // Function to extract links from a message's HTML content
+    function extractLinksFromMessage(htmlContent) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlContent, 'text/html');
+        const links = doc.querySelectorAll('a');
+
+        const references = [];
+
+        links.forEach(link => {
+            const url = link.href;
+            const title = link.textContent || url;
+
+            // Avoid adding empty URLs
+            if (url) {
+                references.push({ title, url });
+            }
+        });
+
+        if (references.length > 0) {
+            populateSidebarB(references);
+        }
     }
 
     // Function to escape HTML entities
@@ -731,7 +473,7 @@ async function sendMessage(event) {
         const chatHistory = document.getElementById('chat-history');
         chatHistory.scrollTop = chatHistory.scrollHeight;
     }
-</script>
+    </script>
 
 </body>
 </html>
