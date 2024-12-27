@@ -1,6 +1,6 @@
 import requests
 
-API_KEY = "JiQu6i98yc2Q42VZYpv5pp8YPIrprSKPsDBeblGk"
+API_KEY = "[api key]"
 BASE_URL = "https://api.cohere.ai/generate"
 
 def ask_cohere(prompt):
