@@ -209,6 +209,53 @@ async def fetch_ai_response(user_input: str) -> str:
         logger.error(f"Error fetching AI response (LM Studio): {e}")
         return "I'm sorry, I couldn't process your request right now."
 
+def communicate_with_ollama(user_id: str, prompt: str) -> str:
+    # Define the API endpoint and headers
+    api_url = "http://localhost:11434/api/chat"
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    # Create the JSON payload without context
+    payload = {
+        "model": "llama3.2",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a role-playing AI. Your name is Britney. You're my AI girlfriend."
+            },
+            {
+                "role": "user",
+                "content": prompt  # Use the current prompt only
+            }
+        ]
+    }
+
+    # Send a request to the Ollama server
+    try:
+        response = requests.post(api_url, json=payload, headers=headers)
+        response.raise_for_status()
+
+        # Process each line of the response
+        lines = response.text.strip().split('\n')
+        combined_response = ""
+        for line in lines:
+            try:
+                data = json.loads(line)
+                if 'message' in data and 'content' in data['message']:
+                    combined_response += data['message']['content']
+            except json.JSONDecodeError:
+                continue
+
+        return combined_response.strip()
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error communicating with Ollama: {e}")
+        return "An error occurred while communicating with the AI."
+    except ValueError as e:
+        logger.error(f"JSON decode error: {e}")
+        return "An error occurred while processing the AI's response."
+
+
 def communicate_with_nebius(user_message: str) -> str:
     """
     Communicates with the Nebius (Llama3) AI model.
@@ -303,7 +350,7 @@ async def menu(ctx):
 1️⃣: Groq
 2️⃣: Grok
 3️⃣: Nebius
-4️⃣: Groq
+4️⃣: Ollama
 5️⃣: LM Studio
 6️⃣: AI21
 7️⃣: Cohere
@@ -323,7 +370,7 @@ async def select_model(ctx, model_number: int):
         1: "Groq",
         2: "Grok",
         3: "Nebius",
-        4: "Groq",
+        4: "Ollama",
         5: "LM Studio",
         6: "AI21",
         7: "Cohere",
@@ -351,7 +398,8 @@ async def chat_with_model(ctx, *, user_message: str):
         try:
             if selected_model == "AI21":
                 response = ask_ai21(user_message)
-
+            if selected_model == "Ollama":
+                response = communicate_with_ollama(str(user_id), message.content)
             elif selected_model == "Grok":
                 response = communicate_with_grok("Your_Grok_API_Key", user_message)
             elif selected_model == "Nebius":
@@ -394,6 +442,8 @@ async def on_message(message):
         try:
             if selected_model == "AI21":
                 response = ask_ai21(message.content)
+            if selected_model == "Ollama":
+                response = communicate_with_ollama(str(user_id), message.content)
             elif selected_model == "Grok":
                 response = communicate_with_grok("Your_Grok_API_Key", message.content)
             elif selected_model == "Nebius":
