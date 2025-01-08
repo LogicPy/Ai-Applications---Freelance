@@ -398,7 +398,7 @@ async def chat_with_model(ctx, *, user_message: str):
         try:
             if selected_model == "AI21":
                 response = ask_ai21(user_message)
-            if selected_model == "Ollama":
+            elif selected_model == "Ollama":
                 response = communicate_with_ollama(str(user_id), message.content)
             elif selected_model == "Grok":
                 response = communicate_with_grok("Your_Grok_API_Key", user_message)
@@ -444,7 +444,7 @@ async def on_message(message):
         try:
             if selected_model == "AI21":
                 response = ask_ai21(message.content)
-            if selected_model == "Ollama":
+            elif selected_model == "Ollama":
                 response = communicate_with_ollama(str(user_id), message.content)
             elif selected_model == "Grok":
                 response = communicate_with_grok("Your_Grok_API_Key", message.content)
