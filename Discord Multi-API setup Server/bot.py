@@ -408,6 +408,8 @@ async def chat_with_model(ctx, *, user_message: str):
                 response = get_groq_response(user_message)
             elif selected_model == "LM Studio":
                 response = await fetch_ai_response(user_message)  # LM Studio
+            elif selected_model == "Cohere":
+                response = ask_cohere(message.content)
             else:
                 response = "Selected model is not yet implemented!"
         except Exception as e:
