@@ -11,22 +11,51 @@ from dotenv import load_dotenv
 # -----------------------------
 load_dotenv()
 
+load_dotenv()
+
+API_KEYS = {
+    "GROK": "[put your api key here.]",
+    "NEBIUS": "[put your api key here.",
+    "LM_STUDIO": "Your_LM_Studio_API_Key_Here",
+    "AI21": "[put your api key here.]",
+    "COHERE": "[put your api key here.]",
+    "GROQ": "[put your api key here.]",
+    "OLLAMA": "Your_Ollama_API_Key_Here",
+    "WHITE_RABBIT_NEO": "[put your api key here.]"
+
+}
+
+# Endpoints
+ENDPOINTS = {
+    "GROK": "https://api.x.ai/v1/chat/completions",
+    "NEBIUS": "https://api.studio.nebius.ai/v1/",
+    "LM_STUDIO": "http://localhost:1234/v1",
+    "AI21": "https://api.ai21.com/studio/v1/chat/completions",
+    "COHERE": "https://api.cohere.ai/generate",
+    "GROQ": "https://api.groq.com/openai/v1/chat/completions",
+    "OLLAMA": "http://localhost:11434/api/chat",
+    "WHITE_RABBIT_NEO": "https://llm.kindo.ai/v1/chat/completions"
+}
+
+# Example Models for each AI
+MODELS = {
+    "GROK": "grok-beta",
+    "NEBIUS": "meta-llama/Meta-Llama-3.1-70B-Instruct",
+    "LM_STUDIO": "opus-v1.2-llama-3-8b-GGUF",
+    "AI21": "jamba-1.5-large",
+    "COHERE": "command-xlarge",
+    "GROQ": "llama-3.3-70b-specdec",
+    "OLLAMA": "dolphin-llama3",
+    "WHITE_RABBIT_NEO": "/models/WhiteRabbitNeo-33B-DeepSeekCoder"
+}
+
 TOKEN = os.getenv('DISCORD_TOKEN')
 GROK_API_KEY = os.getenv('GROK_API_KEY', "YOUR_DEFAULT_API_KEY_HERE")
+import os
 
-# Example for Nebius
-NEBIUS_API_KEY = os.getenv('NEBIUS_API_KEY', "YOUR_DEFAULT_NEBIUS_KEY_HERE")
-NEBIUS_BASE_URL = "https://api.studio.nebius.ai/v1/"
+from dotenv import load_dotenv
 
-LM_BASE_URL = "http://localhost:1234/v1"
-LM_API_KEY = "lm-studio"  # Example LM Studio key; store in env if needed
-
-AI21_API_KEY = "[your api key for ai21]"  # or load from .env
-AI21_API_URL = "https://api.ai21.com/studio/v1/chat/completions"
-
-# AI21 key
-AI21_API_KEY = os.getenv('AI21_API_KEY', "YOUR_DEFAULT_AI21_KEY_HERE")
-
+load_dotenv()
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
@@ -60,11 +89,18 @@ try:
 except ImportError:
     logger.warning("Make sure the openai-like client is installed or reachable.")
 
-# If you have a Nebius client that mimics the OpenAI API:
-nebius_client = OpenAI(
-    base_url=NEBIUS_BASE_URL,
-    api_key=NEBIUS_API_KEY
-)
+# Example for Nebius
+NEBIUS_API_KEY = os.getenv('NEBIUS_API_KEY', "YOUR_DEFAULT_NEBIUS_KEY_HERE")
+NEBIUS_BASE_URL = "https://api.studio.nebius.ai/v1/"
+
+LM_BASE_URL = "http://localhost:1234/v1"
+LM_API_KEY = "lm-studio"  # Example LM Studio key; store in env if needed
+
+AI21_API_KEY = "kOXX2rKZsnCPN5NW4UQDxv86H1bKEcvP"  # or load from .env
+AI21_API_URL = "https://api.ai21.com/studio/v1/chat/completions"
+
+# AI21 key
+AI21_API_KEY = os.getenv('AI21_API_KEY', "YOUR_DEFAULT_AI21_KEY_HERE")
 
 # -----------------------------
 # AI21 Integration Function
@@ -98,6 +134,34 @@ def ask_ai21(prompt: str) -> str:
     except Exception as e:
         logging.error(f"Error communicating with AI21: {e}")
         return "I'm sorry, I couldn't process your request."
+
+
+def communicate_with_white_rabbit_neo(user_message: str) -> str:
+    """
+    Communicates with the White Rabbit Neo model on Kindo AI.
+    """
+    headers = {
+        "api-key": API_KEYS["WHITE_RABBIT_NEO"],
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "model": "/models/WhiteRabbitNeo-33B-DeepSeekCoder",
+        "messages": [{"role": "user", "content": user_message}]
+    }
+
+    try:
+        response = requests.post(ENDPOINTS["WHITE_RABBIT_NEO"], headers=headers, json=payload)
+        response.raise_for_status()  # Raise an error if not 200
+
+        response_data = response.json()
+        ai_response = response_data.get('choices', [{}])[0].get('message', {}).get('content', "No response generated.")
+        return ai_response.strip()
+
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error communicating with White Rabbit Neo: {e}")
+        return "An error occurred while communicating with White Rabbit Neo."
+
 
 COHERE_API_KEY = "[your api key for cohere ai]"  # or load via environment
 COHERE_BASE_URL = "https://api.cohere.ai/generate"
@@ -354,6 +418,7 @@ async def menu(ctx):
 5️⃣: LM Studio
 6️⃣: AI21
 7️⃣: Cohere
+8️⃣: White Rabbit Neo  🐇
 0️⃣ (default): GPT-4
 
 Use `!select <number>` to choose.
@@ -366,16 +431,17 @@ async def select_model(ctx, model_number: int):
     Allows the user to select their desired AI platform.
     """
     user_id = ctx.author.id
-    model_map = {
-        1: "Groq",
-        2: "Grok",
-        3: "Nebius",
-        4: "Ollama",
-        5: "LM Studio",
-        6: "AI21",
-        7: "Cohere",
-        0: "GPT-4"
-    }
+   model_map = {
+    1: "Groq",
+    2: "Grok",
+    3: "Nebius",
+    4: "Ollama",
+    5: "LM Studio",
+    6: "AI21",
+    7: "Cohere",
+    8: "White Rabbit Neo",  # 🔥 Added White Rabbit Neo
+    0: "GPT-4"
+}
 
     selected_model = model_map.get(model_number, None)
     if selected_model:
@@ -410,6 +476,9 @@ async def chat_with_model(ctx, *, user_message: str):
                 response = await fetch_ai_response(user_message)  # LM Studio
             elif selected_model == "Cohere":
                 response = ask_cohere(message.content)
+            elif selected_model == "White Rabbit Neo":
+                response = communicate_with_white_rabbit_neo(user_message)
+
             else:
                 response = "Selected model is not yet implemented!"
         except Exception as e:
@@ -456,11 +525,20 @@ async def on_message(message):
                 response = await fetch_ai_response(message.content)
             elif selected_model == "Cohere":
                 response = ask_cohere(message.content)
- 
+            elif selected_model == "White Rabbit Neo":
+                response = communicate_with_white_rabbit_neo(message.content)
+
             else:
                 response = "Selected model is not yet implemented!"
         except Exception as e:
             response = f"An error occurred while processing your request: {e}"
+
+    # 🔥 Built-in message splitting to avoid 2000-character limit errors
+    if len(response) > 2000:
+        for i in range(0, len(response), 2000):
+            await message.channel.send(response[i:i + 2000])
+    else:
+        await message.channel.send(f"**{selected_model} AI's Response:** {response}")
 
     await message.channel.send(f"**{selected_model} AI's Response:** {response}")
 
