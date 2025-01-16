@@ -21,7 +21,8 @@ API_KEYS = {
     "COHERE": "[put your api key here.]",
     "GROQ": "[put your api key here.]",
     "OLLAMA": "Your_Ollama_API_Key_Here",
-    "WHITE_RABBIT_NEO": "[put your api key here.]"
+    "WHITE_RABBIT_NEO": "[put your api key here.]",
+    "OPENROUTER_GPT4O": "[put your api key here.]"
 
 }
 
@@ -34,7 +35,8 @@ ENDPOINTS = {
     "COHERE": "https://api.cohere.ai/generate",
     "GROQ": "https://api.groq.com/openai/v1/chat/completions",
     "OLLAMA": "http://localhost:11434/api/chat",
-    "WHITE_RABBIT_NEO": "https://llm.kindo.ai/v1/chat/completions"
+    "WHITE_RABBIT_NEO": "https://llm.kindo.ai/v1/chat/completions",
+    "OPENROUTER_GPT4O": "https://openrouter.ai/api/v1/chat/completions"
 }
 
 # Example Models for each AI
@@ -46,7 +48,8 @@ MODELS = {
     "COHERE": "command-xlarge",
     "GROQ": "llama-3.3-70b-specdec",
     "OLLAMA": "dolphin-llama3",
-    "WHITE_RABBIT_NEO": "/models/WhiteRabbitNeo-33B-DeepSeekCoder"
+    "WHITE_RABBIT_NEO": "/models/WhiteRabbitNeo-33B-DeepSeekCoder",
+    "OPENROUTER_GPT4O": "openai/gpt-4o-2024-08-06"
 }
 
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -193,6 +196,40 @@ def ask_cohere(prompt: str) -> str:
     except Exception as e:
         logging.error(f"Error calling Cohere: {e}")
         return "An error occurred while communicating with the AI."
+
+
+def communicate_with_openrouter_gpt4o(user_message):
+    """
+    Sends a message to the OpenRouter GPT-4o model and returns the AI's response.
+    """
+    headers = {
+        "Authorization": f"Bearer {API_KEYS['OPENROUTER_GPT4O']}",  # ✅ Assuming 'OPENROUTER' is the new key
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "model": "openai/gpt-4o-2024-08-06",
+        "messages": [
+            {"role": "system", "content": "You are a helpful and intelligent AI assistant."},
+            {"role": "user", "content": user_message}
+        ],
+        "temperature": 0.7,
+        "max_tokens": 150
+    }
+
+    try:
+        response = requests.post(ENDPOINTS['OPENROUTER_GPT4O'], headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        ai_response = data['choices'][0]['message']['content'].strip()
+        return ai_response
+
+    except requests.exceptions.HTTPError as http_err:
+        return f"HTTP Error: {http_err}"
+    except requests.exceptions.RequestException as req_err:
+        return f"Request Error: {req_err}"
+    except KeyError:
+        return "Error: Invalid response format. Check model or payload."
 
 
 import requests
@@ -451,6 +488,13 @@ async def select_model(ctx, model_number: int):
     else:
         await ctx.send("Invalid selection. Please select a valid model using `!select <number>`.")
 
+async def send_split_message(channel, response):
+    if len(response) > 2000:
+        for i in range(0, len(response), 2000):
+            await channel.send(response[i:i + 2000])
+    else:
+        await channel.send(response)
+
 
 @bot.command(name="chat")
 async def chat_with_model(ctx, *, user_message: str):
@@ -458,33 +502,34 @@ async def chat_with_model(ctx, *, user_message: str):
     Handles user input and sends it to the selected AI platform.
     """
     user_id = ctx.author.id
-    selected_model = user_model_selection.get(user_id, "GPT-4")  # Default to GPT-4
+    selected_model = user_model_selection.get(user_id, "GPT-4")
 
     async with ctx.typing():
         try:
             if selected_model == "AI21":
                 response = ask_ai21(user_message)
-            elif selected_model == "Ollama":
-                response = communicate_with_ollama(str(user_id), message.content)
             elif selected_model == "Grok":
-                response = communicate_with_grok("Your_Grok_API_Key", user_message)
+                response = communicate_with_grok(user_message)
             elif selected_model == "Nebius":
                 response = communicate_with_nebius(user_message)
+            elif selected_model == "Ollama":
+                response = communicate_with_ollama(str(user_id), user_message)
             elif selected_model == "Groq":
                 response = get_groq_response(user_message)
             elif selected_model == "LM Studio":
-                response = await fetch_ai_response(user_message)  # LM Studio
+                response = await fetch_ai_response(user_message)
             elif selected_model == "Cohere":
-                response = ask_cohere(message.content)
+                response = ask_cohere(user_message)
             elif selected_model == "White Rabbit Neo":
                 response = communicate_with_white_rabbit_neo(user_message)
-
+            elif selected_model == "OpenRouter GPT-4o":
+                response = communicate_with_openrouter_gpt4o(user_message)
             else:
                 response = "Selected model is not yet implemented!"
         except Exception as e:
-            response = f"An error occurred while processing your request: {e}"
+            response = f"An error occurred: {e}"
 
-    await ctx.send(f"**{selected_model} AI's Response:** {response}")
+    await send_split_message(message.channel, f"**{selected_model} AI's Response:** {response}")
 
 @bot.event
 async def on_ready():
@@ -513,12 +558,12 @@ async def on_message(message):
         try:
             if selected_model == "AI21":
                 response = ask_ai21(message.content)
-            elif selected_model == "Ollama":
-                response = communicate_with_ollama(str(user_id), message.content)
             elif selected_model == "Grok":
-                response = communicate_with_grok("Your_Grok_API_Key", message.content)
+                response = communicate_with_grok(message.content)
             elif selected_model == "Nebius":
                 response = communicate_with_nebius(message.content)
+            elif selected_model == "Ollama":
+                response = communicate_with_ollama(str(user_id), message.content)
             elif selected_model == "Groq":
                 response = get_groq_response(message.content)
             elif selected_model == "LM Studio":
@@ -527,9 +572,11 @@ async def on_message(message):
                 response = ask_cohere(message.content)
             elif selected_model == "White Rabbit Neo":
                 response = communicate_with_white_rabbit_neo(message.content)
-
+            elif selected_model == "OpenRouter GPT-4o":
+                response = communicate_with_openrouter_gpt4o(message.content)  # ✅ Correct usage here
             else:
                 response = "Selected model is not yet implemented!"
+           
         except Exception as e:
             response = f"An error occurred while processing your request: {e}"
 
@@ -540,7 +587,6 @@ async def on_message(message):
     else:
         await message.channel.send(f"**{selected_model} AI's Response:** {response}")
 
-    await message.channel.send(f"**{selected_model} AI's Response:** {response}")
 
 def main():
     if not TOKEN:
