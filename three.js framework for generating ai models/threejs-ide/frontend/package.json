@@ -24,7 +24,7 @@
     "react-monaco-editor": "^0.56.1",
     "react-scripts": "5.0.1",
     "three": "^0.169.0",
-    "three-stdlib": "^2.33.0",
+    "three-stdlib": "^2.35.14",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
