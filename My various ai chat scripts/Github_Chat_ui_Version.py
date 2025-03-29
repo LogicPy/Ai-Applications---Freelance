@@ -65,11 +65,10 @@ def chat_with_memory(message, history, current_system_prompt, model_choice):
         updated_history = history + [{"role": "user", "content": message}, {"role": "assistant", "content": error_msg}]
         return "", updated_history
 
-
 # Configure the client
 client = OpenAI(
     base_url="https://api.studio.nebius.ai/v1/",
-    api_key=""  # Remember to use your actual API key!
+    api_key="[Your API Key]"  # Remember to use your actual API key!
 )
 
 # 1. FIRST, LET'S UPGRADE YOUR CHAT FUNCTION
@@ -679,7 +678,6 @@ emoji_css = """
 }
 
 """
-# Add these imports if not already present
 
 # Add this emoji list (you can expand it as needed)
 COMMON_EMOJIS = [
@@ -825,8 +823,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 """
 
-# Modify your chat interface section
-
 def update_theme(dark_mode):
     # 1. Update HTML class
     js = f"""
@@ -860,7 +856,6 @@ def stream_chars(message, history):
         time.sleep(0.05)  # Adjust typing speed
         yield "", history + [[message, response]]
 
-
 def sync_with_settings():
     return """
     <script>
@@ -887,16 +882,13 @@ def sync_with_settings():
     """
     
 COMMON_EMOJIS = ["😀", "😂", "😍", "🤔", "😎", "🥳", "😴", "🥰", "🤩", "🥳", "👏" , "🙂", "😊", "👍", "👌", "✅", "❤️", "💙", "💜", "💚", "🧡", "💛", "🤍", "🧠"]
-
-updated_css = avatar_css + ultimate_dark_css + toggle_height_fix  # No need for emoji_css
+updated_css = avatar_css + ultimate_dark_css + toggle_height_fix
 
 AVAILABLE_MODELS = {
-    "deepseek": "deepseek-ai/DeepSeek-V3-0324",
-    "gpt-4o": "gpt-4o",
-    "dolphin mixtral": "meta-llama/Meta-Llama-3.1-70B-Instruct"
+    "DeepSeek v3": "deepseek-ai/DeepSeek-V3-0324",
+    "Dolphin Mixtral": "cognitivecomputations/dolphin-2.9.2-mixtral-8x22b"
 }
 
-# Link the send button to the send_message function
 # Create interface with avatar support
 with gr.Blocks(css=updated_css) as demo:   
     system_prompt_state = gr.State("You are a helpful AI assistant.")
@@ -939,7 +931,7 @@ with gr.Blocks(css=updated_css) as demo:
         # Model selector
         model_selector = gr.Dropdown(
             choices=list(AVAILABLE_MODELS.keys()),
-            value="deepseek",  # Default to Llama
+            value="DeepSeek v3",  # Default to Llama
             label="Select Model",
             interactive=True  # Explicitly enable interaction
         )
@@ -982,7 +974,6 @@ with gr.Blocks(css=updated_css) as demo:
             inputs=msg
         )
 
-
         with gr.Accordion("Memory Controls", open=False):
             with gr.Row():
                 clear_mem_btn = gr.Button(" Clear Memory")
@@ -993,10 +984,7 @@ with gr.Blocks(css=updated_css) as demo:
 
             mem_display = gr.JSON(label="Current Memory")
 
-        
         # 3. MEMORY MANAGEMENT FUNCTIONS
-
-
         def clear_memory():
             confirm_clear = gr.Confirmation("Confirm Clear Memory", "Are you sure you want to clear the memory?")
             if confirm_clear:
