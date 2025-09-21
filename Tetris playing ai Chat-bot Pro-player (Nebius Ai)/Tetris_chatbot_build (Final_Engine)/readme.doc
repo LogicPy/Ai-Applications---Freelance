@@ -1,0 +1,29 @@
+📘 README Instructions: Setting NEBUIS_API_KEY Across Operating Systems
+To use the Nebius API in this project, you’ll need to define your API key as an environment variable named NEBUIS_API_KEY. Here's how to set it up depending on your operating system:
+
+🪟 Windows (Command Prompt or PowerShell)
+cmd
+set NEBUIS_API_KEY=your_api_key_here
+✅ This sets the variable for the current session. To make it persistent, add it to your system environment variables via Control Panel → System → Advanced → Environment Variables.
+
+🐧 Linux (Bash or Zsh)
+bash
+export NEBUIS_API_KEY=your_api_key_here
+✅ To make it persistent, add the line above to your ~/.bashrc, ~/.zshrc, or relevant shell config file.
+
+🍎 macOS (Terminal)
+bash
+export NEBUIS_API_KEY=your_api_key_here
+✅ For persistence, add it to your ~/.zprofile, ~/.bash_profile, or ~/.zshrc depending on your shell.
+
+Once set, your application will be able to access the key using Python’s os.environ:
+
+python
+import os
+api_key = os.environ.get("NEBUIS_API_KEY")
+
+This is the third ui designed chat-bot based self-playing (through the actual selected chat-bot) processing the game logic as per the system prompt definition.
+Anything is possible with an ai model and system prompt used to define your ai model's personality with your default ai's super advanced logical mind trained on massive amounts of data.
+This project as a quick adaptation demonstrating this theory as per Tetris game-play.
+
+Thanks for stopping by my curious reader, friend! :D
