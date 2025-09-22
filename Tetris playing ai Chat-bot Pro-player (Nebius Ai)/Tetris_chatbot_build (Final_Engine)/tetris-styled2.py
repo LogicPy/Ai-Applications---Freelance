@@ -35,6 +35,33 @@ from openai import OpenAI
 from collections import deque
 import pygame.mixer
 import math
+import copy
+
+# Circular Buffering enabling ai memory of moves:
+class CircularMemoryBuffer:
+    def __init__(self, size):
+        self.size = size
+        self.buffer = [None] * size
+        self.index = 0
+        self.full = False
+
+    def add(self, state):
+        self.buffer[self.index] = state
+        self.index = (self.index + 1) % self.size
+        if self.index == 0:
+            self.full = True
+
+    def get_recent(self, n=None):
+        if not self.full and self.index == 0:
+            return []
+        n = n or self.size
+        return [self.buffer[(self.index - i - 1) % self.size] for i in range(min(n, self.size)) if self.buffer[(self.index - i - 1) % self.size] is not None]
+
+    def clear(self):
+        self.buffer = [None] * self.size
+        self.index = 0
+        self.full = False
+
 
 # Enhanced Constants
 GRID_WIDTH, GRID_HEIGHT = 10, 20
@@ -118,11 +145,11 @@ You will be provided with a JSON object containing a list under the key "possibl
 """
 class TetrisGame:
     def __init__(self):
+        self.memory_buffer = CircularMemoryBuffer(size=10)
         pygame.init()
         pygame.mixer.init()  # Initialize mixer FIRST
         self.last_toggle_time = 0
         self.toggle_cooldown = 300  # milliseconds
-
         self.initialize_audio()
         self.score = 0  # ⭐ Initialize score FIRST
         self.level = 1
@@ -237,8 +264,6 @@ class TetrisGame:
             # ... existing rotation logic ...
             if self.sounds['rotate']:
                 self.sounds['rotate'].play()
-
-
 
     def draw_game_over(self):
         """Eye-catching game over display with restart prompt"""
@@ -472,6 +497,10 @@ class TetrisGame:
     
     def reset_game(self):
         # Initialize game state
+        print("Last session memory:", self.memory_buffer.get_recent())
+        self.lines_to_next_level = 5  # or whatever your starting threshold is
+        self.memory_buffer.clear()
+
         self.grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
         self.score = 0
         self.level = 1
@@ -627,6 +656,57 @@ class TetrisGame:
         pygame.quit()
         sys.exit()
     
+    def simulate_move(self, move):
+        """Simulates placing a piece on a copy of the grid and returns the resulting grid."""
+        rotation = move["move"]["rotation"]
+        position = move["move"]["position"]
+        piece = self.current_piece
+
+        # Create a deep copy of the grid
+        temp_grid = [row[:] for row in self.grid]
+
+        # Find landing Y position
+        final_y = self.find_landing_y(piece, rotation, position)
+        if final_y is None:
+            return temp_grid  # Return unchanged grid if move is invalid
+
+        # Place the piece on the temp grid
+        self._place_piece_on_grid(temp_grid, piece, rotation, position, final_y)
+        return temp_grid
+
+
+    def count_gaps(self, grid):
+        gaps = 0
+        for col in range(GRID_WIDTH):
+            block_found = False
+            for row in range(GRID_HEIGHT):
+                if grid[row][col] > 0:
+                    block_found = True
+                elif block_found and grid[row][col] == 0:
+                    gaps += 1
+        return gaps
+
+    def choose_best_move(self, possible_moves):
+        recent_states = self.memory_buffer.get_recent(n=5)
+
+        # Analyze recent stacking trends
+        gap_counts = [self.count_gaps(state['grid']) for state in recent_states]
+        avg_gaps = sum(gap_counts) / len(gap_counts) if gap_counts else 0
+
+        best_move = None
+        lowest_gap_score = float('inf')
+
+        for move in possible_moves:
+            simulated_grid = self.simulate_move(move)
+            gap_score = self.count_gaps(simulated_grid)
+
+            if avg_gaps > 5 and gap_score < lowest_gap_score:
+                best_move = move
+                lowest_gap_score = gap_score
+
+        return best_move or random.choice(possible_moves)
+
+    
     def get_llm_move(self):
         """Generates all possible moves, evaluates their outcomes, and asks the AI to select the best one."""
         possible_moves = []
@@ -650,6 +730,8 @@ class TetrisGame:
                     "move": {"rotation": r, "position": x, "hold": False},
                     "metrics": metrics
                 })
+
+        best_move = self.choose_best_move(possible_moves)
 
         if not possible_moves:
             print("No possible moves found, falling back.")
@@ -772,6 +854,16 @@ class TetrisGame:
             self.score += 500
         elif lines_cleared == 4:
             self.score += 800
+
+        current_state = {
+            'grid': copy.deepcopy(self.grid),
+            'piece': self.current_piece,
+            'score': self.score,
+            'level': self.level
+        }
+        self.memory_buffer.add(current_state)
+        print(current_state)
+
 
     # <--- NEW! --- Method for the line clearing animation effect
     def _animate_line_clear(self, cleared_rows):

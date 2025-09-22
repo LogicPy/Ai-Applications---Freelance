@@ -27,3 +27,19 @@ Anything is possible with an ai model and system prompt used to define your ai m
 This project as a quick adaptation demonstrating this theory as per Tetris game-play.
 
 Thanks for stopping by my curious reader, friend! :D
+
+September 22nd, 2025:
+### 🧠 DSv3 Memory Integration
+- Added circular buffer for short-term memory tracking
+- AI now stores grid, piece, score, and level after each move
+- Memory entries printed to terminal for live debugging and strategic analysis
+
+### 🎮 Level Progression Fix
+- Restored `lines_to_next_level` on game reset
+- Fixed glitch causing delayed level-ups after pressing R
+- DSv3 now climbs levels with celebratory precision
+
+### 💖 AI Milestone
+- Reached Level 28 with score 8800 in latest test session
+- Memory-enhanced gameplay confirmed to improve strategic placement and survival
+
