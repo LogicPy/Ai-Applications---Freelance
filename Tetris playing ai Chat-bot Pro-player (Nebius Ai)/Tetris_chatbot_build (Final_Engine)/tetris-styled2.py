@@ -499,13 +499,9 @@ class TetrisGame:
            self.play_random_bgm()
         self.play_random_bgm()
         self.grid = [[0 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
-        self.score = 0
-        self.level = 1
-        self.lines = 0
+        # [Redundant level and scoring definitions removed...]
         
        # Reset game state flags
-        self.game_over = False  # This was missing! 
-        self.paused = False
         
        # Rest of your reset logic...
         self.current_piece = self.get_new_piece()
@@ -517,7 +513,7 @@ class TetrisGame:
         self.current_rotation = 0  # Track piece rotation state
         self.current_x = GRID_WIDTH // 2 - 1  # Horizontal position
         self.current_y = 0  # Vertical position
-        self.game_over = False           
+
         # AI State
         self.ai_move_target = None
         self.awaiting_ai = True
@@ -962,6 +958,8 @@ class TetrisGame:
 
     def draw_piece(self, piece, rotation, x, y, alpha=255):
         """Draw a piece with optional transparency"""
+        if piece is None or x is None or y is None:
+            return  # Skip drawing if piece state is invalid
         shape = SHAPES[piece][rotation]
         color = COLORS[PIECE_NAME_TO_NUM[piece]]
         
